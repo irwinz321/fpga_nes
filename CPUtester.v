@@ -67,13 +67,12 @@ module CPUtester;
 		case (Addr_bus) 
 			0: Data_bus = ADC_IMM;	
 			1: Data_bus = 8'h4;
-			2: Data_bus = ADC_ABS;
-			3: Data_bus = 8'h08;
-			4: Data_bus = 8'h00;
-			5: Data_bus = SEC;
-			6: Data_bus = SBC_IMM;
-			7: Data_bus = 8'h9;
-			8: Data_bus = 8'h5;
+			2: Data_bus = ADC_ZPG;
+			3: Data_bus = 8'h07;
+			4: Data_bus = SEC;
+			5: Data_bus = SBC_IMM;
+			6: Data_bus = 8'h9;
+			7: Data_bus = 8'h5;
 			default: Data_bus = 8'd0;
 		endcase
 	end
@@ -88,7 +87,8 @@ module CPUtester;
 	
 	// Opcode definitions:
 	localparam [7:0] ADC_IMM = 8'h69, SBC_IMM = 8'he9, SEC = 8'h38, CLC = 8'h18,
-                     ADC_ABS = 8'h6d;
+                     ADC_ABS = 8'h6d,
+					 ADC_ZPG = 8'h65;
       
 endmodule
 
