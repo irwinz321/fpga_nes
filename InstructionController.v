@@ -1,0 +1,56 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date:    13:05:13 07/02/2016 
+// Design Name: 
+// Module Name:    InstructionController 
+// Project Name: 
+// Target Devices: 
+// Tool versions: 
+// Description: 
+//
+// Dependencies: 
+//
+// Revision: 
+// Revision 0.01 - File Created
+// Additional Comments: 
+//
+//////////////////////////////////////////////////////////////////////////////////
+module InstructionController(
+	input wire rst, 		// Reset signal
+    input clk_ph1,			// clock phase 1
+    input I_cycle, R_cycle, // increment/reset cycle counter lines
+	input [7:0] PD,			// pre-decode register
+    output reg [7:0] IR,    // instruction register
+    output reg [2:0] cycle  // current instruction cycle
+    );
+    
+// Signal declarations:
+wire [2:0] next_cycle;  // Next cycle count
+wire [7:0] opcode;      // Opcode to put into instruction register
+    
+// Decide what the next cycle count should be:
+assign next_cycle = (R_cycle == 1) ? 3'd0                           // if reset_cycle, reset count to 0
+                                   : (I_cycle == 1) ? cycle + 3'd1  // else, if increment_cycle, increment count
+                                                    : cycle;        // else, don't change count
+    
+// Decide what gets loaded into the instruction register (change only on T1 cycle):
+assign opcode = (next_cycle == 1) ? PD      // on next T1, load new opcode
+                                  : IR;     // if not T1 cycle, keep last opcode
+    
+// Latch new values on ph1:
+always @(posedge clk_ph1) begin
+
+	if (rst == 0) begin
+		cycle <= 7;				// Reset cycle counter to MAX (not 0! - necessary to get 1st opcode after reset)
+		IR <= 0;				// Reset IR
+	end
+	else begin
+		cycle <= next_cycle;    // Latch cycle
+		IR <= opcode;           // Latch instruction
+	end
+end
+    
+endmodule

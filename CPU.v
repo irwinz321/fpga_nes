@@ -1,0 +1,123 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date:    19:49:06 09/17/2016 
+// Design Name: 
+// Module Name:    CPU 
+// Project Name: 
+// Target Devices: 
+// Tool versions: 
+// Description: 
+//
+// Dependencies: 
+//
+// Revision: 
+// Revision 0.01 - File Created
+// Additional Comments: 
+//
+//////////////////////////////////////////////////////////////////////////////////
+module CPU(
+	input clk_ph1, clk_ph2,		// Clock phases - this will change to a single clock... eventually.
+	input rst,					// System reset
+	input [7:0] Data_bus,		// Output Data Bus
+	output [15:0] Addr_bus, 	// Output Address Bus
+	output [20:0] Controls,		// debug - {all control lines}
+	output [10:0] opcode,		// debug - {IR, cycle}
+	output [7:0] ALURESULT		// debug - {alu result}
+    );
+	
+	// Signal declarations:
+	wire I_cycle, R_cycle, DL_DB, AC_SB, ADD_SB, PCL_ADL, PCH_ADH, SB_AC, ADL_ABL, ADH_ABH, I_PC, PCL_PCL, PCH_PCH, SB_ADD, nDB_ADD, DB_ADD, SUMS,
+			ACR_C, AVR_V, SB_DB, DBZ_Z, DB7_N, IR5_C;	// control lines
+	wire [7:0] IR;							// instruction register
+	wire [2:0] cycle;						// cycle counter
+	wire [7:0] PCL, PCH;					// program counter high and low byte registers
+	wire [7:0] DB, SB, ADL, ADH;			// internal busses (data bus, system bus, address bus low and high)
+	wire [7:0] AI, BI, ALU_result;			// ALU signals (Ainput, Binput, result)
+	wire C, OVF;							// ALU result flags (carry, overflow)
+	reg Creg, OVFreg;						// ALU reslt flags (carry, overflow) - registers to latch wire values until storage
+	reg [7:0] PD, DL, AC, ADD, ABL, ABH, P;	// top-level registers (pre-decode, data latch, accumulator, adder hold, output address bus low and high, CPU status)
+	
+	// Select inputs to internal busses:
+	assign SB = AC_SB ? AC : (ADD_SB ? ADD : 8'd0);	// Select System Bus input
+	assign DB = DL_DB ? DL : (SB_DB ? SB : 8'd0);	// Select Data Bus input
+	assign ADL = PCL_ADL ? PCL : 8'd0;				// Select Address Low Bus input
+	assign ADH = PCH_ADH ? PCH : 8'd0;				// Select Address High Bus input
+	
+	// Select ALU inputs:
+	assign AI = SB_ADD ? SB : 8'd0;					// Select ALU input A
+	assign BI = (DB_ADD || nDB_ADD) ? DB : 8'd0;	// Select ALU input B
+	
+	
+	// Latch registers on phase 1:
+	always @(posedge clk_ph1) begin
+		if (rst == 0) begin
+			AC <= 0;
+			ABL <= 0;
+			ABH <= 0;
+			P <= 0;
+		end
+		else begin
+			AC <= (SB_AC ? SB : AC);			// AC has inputs from SB, ...
+			ABL <= (ADL_ABL ? ADL : ABL);		// ABL has inputs from ADL only	- holds value otherwise
+			ABH <= (ADH_ABH ? ADH : ABH);		// ABH has inputs from ADH only - holds value otherwise
+			P[0] <= (ACR_C ? Creg : (IR5_C ? IR[5] : P[0]));		// Status reg bit 0 - carry flag
+			P[1] <= (DBZ_Z ? (~| DB) : P[1]);	// Status reg bit 1 - zero flag
+			//P[2]								// Status reg bit 2 - interrupt disable flag
+			//P[3]								// Status reg bit 3 - decimal mode flag (setting/clearing does nothing for NES Ricoh CPU)
+			//P[4]								// Status reg bit 4 - break flag
+			P[5] <= 1'd1;						// Status reg bit 5 - expansion flag (not used)
+			P[6] <= (AVR_V ? OVFreg : P[6]);	// Status reg bit 6 - overflow flag
+			P[7] <=	(DB7_N ? DB[7] : P[7]);		// Status reg bit 7 - negative flag
+		end		
+	end
+	
+	// Latch registers on phase 2:
+	always @(posedge clk_ph2) begin
+		if (rst == 0) begin
+			PD <= 0;
+			DL <= 0;
+			ADD <= 0;
+			Creg <= 0;
+			OVFreg <= 0;
+		end
+		else begin
+			PD <= Data_bus;		// input data gets latched to PD automatically
+			DL <= Data_bus;		// input data gets latched to DL automatically
+			ADD <= ALU_result;	// alu result stored in ADD
+			Creg <= C;			// alue carry flag latched for storage in P next cycle
+			OVFreg <= OVF;		// alu overflow flag latched for storage in P next cycle
+		end
+	end
+	
+	// Instruction controller sets IR and Cycle Counter:
+	InstructionController ic (.rst(rst), .clk_ph1(clk_ph1), .I_cycle(I_cycle), .R_cycle(R_cycle), .PD(PD), .IR(IR), .cycle(cycle));
+	
+	// Instruction decoder uses IR and Cycle counter to determine which control lines active on NEXT cycle:
+	InstructionDecoder id (.clk_ph2(clk_ph2), .rst(rst), .cycle(cycle), .IR(IR), .I_cycle(I_cycle), .R_cycle(R_cycle), 
+						   .DL_DB(DL_DB), .AC_SB(AC_SB), .ADD_SB(ADD_SB), .PCL_ADL(PCL_ADL), .PCH_ADH(PCH_ADH), .SB_AC(SB_AC), .ADL_ABL(ADL_ABL), .ADH_ABH(ADH_ABH), 
+						   .I_PC(I_PC), .PCL_PCL(PCL_PCL), .PCH_PCH(PCH_PCH), .SB_ADD(SB_ADD), .nDB_ADD(nDB_ADD), .DB_ADD(DB_ADD), .SUMS(SUMS), .AVR_V(AVR_V), .ACR_C(ACR_C),
+						   .DBZ_Z(DBZ_Z), .SB_DB(SB_DB), .DB7_N(DB7_N), .IR5_C(IR5_C));
+						   
+	// Program counter sets current... program counter: 					   
+	ProgramCounter pc (.rst(rst), .CLOCK_ph2(clk_ph2), .ADLin(8'd0), .ADHin(8'd0), .INC_en(I_PC), .PCLin_en(PCL_PCL), .PCHin_en(PCH_PCH),
+					   .ADLin_en(1'd0), .ADHin_en(1'd0), .PCLout(PCL), .PCHout(PCH));
+	
+	// Arithmetic and logic unit performs all operations:
+	ALU alu (.SUM_en(SUMS), .AND_en(1'd0), .EOR_en(1'd0), .OR_en(1'd0), .SR_en(1'd0), .INV_en(nDB_ADD),
+			 .Ain(AI), .Bin(BI), .Cin(P[0]), .RES(ALU_result), .Cout(C), .OVFout(OVF));
+		
+	// Set CPU outputs:
+	assign Addr_bus = {ABH, ABL};	// Address Bus
+	
+	
+	
+	// purely for viewing signals in simulation
+	assign Controls = {I_cycle, R_cycle, DL_DB, AC_SB, ADD_SB, PCL_ADL, PCH_ADH, SB_AC, ADL_ABL, ADH_ABH, I_PC, PCL_PCL, PCH_PCH, SB_ADD, nDB_ADD, DB_ADD, SUMS, AVR_V, 
+						ACR_C, DBZ_Z, SB_DB};
+	assign opcode = {IR, cycle};
+	assign ALURESULT = ALU_result;
+
+endmodule
