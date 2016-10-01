@@ -4,7 +4,7 @@
 `define RESET_OUTPUTS I_cycle <= 0;	R_cycle <= 0; DL_DB <= 0; AC_SB <= 0; ADD_SB <= 0; PCL_ADL <= 0; PCH_ADH <= 0;		\
 					  SB_AC <= 0; ADL_ABL <= 0; ADH_ABH <= 0; I_PCint <= 0; PCL_PCL <= 0; PCH_PCH <= 0; SB_ADD <= 0;		\
 					  nDB_ADD <= 0; DB_ADD <= 0; SUMS <= 0; ACR_C <= 0; AVR_V <= 0; DBZ_Z <= 0; SB_DB <= 0; DB7_N <= 0;	\
-					  IR5_C <= 0;
+					  IR5_C <= 0; Z_ADD <= 0; ADD_ADL <= 0; DL_ADH <= 0;
 	
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
@@ -26,19 +26,20 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 module InstructionDecoder(
-	input clk_ph2,								// clock phase 2
-	input rst,									// reset signal
-	input [2:0] cycle,							// current instruction cycle
-	input [7:0] IR,								// instruction register
-	output reg I_cycle, R_cycle,				// increment/reset cycle counter
-	output reg DL_DB, AC_SB, ADD_SB,			// bus control
-	output reg PCL_ADL, PCH_ADH,				// bus control
-	output reg SB_AC, SB_DB,					// bus control
-	output reg ADL_ABL, ADH_ABH,				// output address control
-	output reg PCL_PCL, PCH_PCH,				// program counter control
+	input clk_ph2,								        // clock phase 2
+	input rst,									        // reset signal
+	input [2:0] cycle,							        // current instruction cycle
+	input [7:0] IR,								        // instruction register
+	output reg I_cycle, R_cycle,				        // increment/reset cycle counter
+	output reg DL_DB, AC_SB, ADD_SB,			        // bus control
+    output reg DL_ADH,
+	output reg PCL_ADL, PCH_ADH, ADD_ADL,		        // bus control
+	output reg SB_AC, SB_DB,					        // bus control
+	output reg ADL_ABL, ADH_ABH,				        // output address control
+	output reg PCL_PCL, PCH_PCH,				        // program counter control
 	output wire I_PC, 
-	output reg SB_ADD, nDB_ADD, DB_ADD,			// ALU input control
-    output reg SUMS,                    		// ALU operation control
+	output reg SB_ADD, nDB_ADD, DB_ADD,	Z_ADD,      	// ALU input control
+    output reg SUMS,                    		        // ALU operation control
 	output reg AVR_V, ACR_C, DBZ_Z, DB7_N, IR5_C		// Processor status flag control
     );
 	
@@ -59,7 +60,7 @@ module InstructionDecoder(
 			case (cycle)
 				0: begin
 					case (IR)
-						ADC_IMM, SBC_IMM: begin  // next cycle: store ALU result, fetch next byte
+						ADC_IMM, SBC_IMM, ADC_ABS: begin  // next cycle: store ALU result, fetch next byte
 							I_cycle <= 1;											// increment cycle counter
 					
 							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;	// output PC on address bus
@@ -116,9 +117,39 @@ module InstructionDecoder(
 							
 							IR5_C <= 1;														// set carry flag to bit 5 of current opcode (1 if SEC, 0 if CLC)
 						end
+                        ADC_ABS: begin  // next cycle: store address low-byte in ALU, fetch address high-byte
+                            I_cycle <= 1;   // increment cycle counter
+                            
+                            PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
+                            I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
+                            
+                            DL_DB <= 1; DB_ADD <= 1; Z_ADD <= 1; SUMS <= 1;     // send low-byte to ALU, add zero
+                        end
 							
 					endcase
 				end
+                2: begin
+                    case (IR)
+                        ADC_ABS: begin  // next cycle: output address, fetch data
+                            I_cycle <= 1;   // increment cycle counter
+                            
+                            ADD_ADL <= 1; DL_ADH <= 1; ADL_ABL <= 1; ADH_ABH <= 1;  // send low-byte (ALU) to ABL, send high-byte (DL) to ABH
+                        end
+                    endcase
+                end
+                3: begin
+                    case (IR)
+                        ADC_ABS: begin  // next cycle: perform add, fetch next opcode
+                            R_cycle <= 1;													// reset cycle counter to 0
+							
+							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
+					
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
+							
+							DL_DB <= 1; DB_ADD <= 1; AC_SB <= 1; SB_ADD <= 1; SUMS <= 1;	// perform ALU add on AC, DL
+                        end
+                    endcase
+                end
 				default: begin  // next cycle: fetch first opcode, reset cycle (should only happen on reset)
 					R_cycle <= 1;											// reset cycle counter to 0
 					
@@ -133,10 +164,11 @@ module InstructionDecoder(
 	end
 	
 	// PC increment skipped if we're on a single-byte instruction:
-	assign I_PC = (cycle == 1 && (IR == SEC || IR == CLC)) ? 0 : I_PCint;
+	assign I_PC = (cycle == 1'd1 && (IR == SEC || IR == CLC)) ? 1'd0 : I_PCint;
 	
 	// Opcode definitions:
-	localparam [7:0] ADC_IMM = 8'h69, SBC_IMM = 8'he9, SEC = 8'h38, CLC = 8'h18;
+	localparam [7:0] ADC_IMM = 8'h69, SBC_IMM = 8'he9, SEC = 8'h38, CLC = 8'h18,
+                     ADC_ABS = 8'h6d;
 		
 
 endmodule

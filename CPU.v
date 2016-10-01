@@ -22,15 +22,15 @@ module CPU(
 	input clk_ph1, clk_ph2,		// Clock phases - this will change to a single clock... eventually.
 	input rst,					// System reset
 	input [7:0] Data_bus,		// Output Data Bus
-	output [15:0] Addr_bus, 	// Output Address Bus
-	output [20:0] Controls,		// debug - {all control lines}
-	output [10:0] opcode,		// debug - {IR, cycle}
-	output [7:0] ALURESULT		// debug - {alu result}
+	output [15:0] Addr_bus,   	// Output Address Bus
+    output [7:0] IR_dbg, AC_dbg, 
+    output [15:0] PC_dbg,
+    output [2:0] cycle_dbg
     );
 	
 	// Signal declarations:
 	wire I_cycle, R_cycle, DL_DB, AC_SB, ADD_SB, PCL_ADL, PCH_ADH, SB_AC, ADL_ABL, ADH_ABH, I_PC, PCL_PCL, PCH_PCH, SB_ADD, nDB_ADD, DB_ADD, SUMS,
-			ACR_C, AVR_V, SB_DB, DBZ_Z, DB7_N, IR5_C;	// control lines
+			ACR_C, AVR_V, SB_DB, DBZ_Z, DB7_N, IR5_C, Z_ADD, ADD_ADL, DL_ADH;	// control lines
 	wire [7:0] IR;							// instruction register
 	wire [2:0] cycle;						// cycle counter
 	wire [7:0] PCL, PCH;					// program counter high and low byte registers
@@ -43,11 +43,11 @@ module CPU(
 	// Select inputs to internal busses:
 	assign SB = AC_SB ? AC : (ADD_SB ? ADD : 8'd0);	// Select System Bus input
 	assign DB = DL_DB ? DL : (SB_DB ? SB : 8'd0);	// Select Data Bus input
-	assign ADL = PCL_ADL ? PCL : 8'd0;				// Select Address Low Bus input
-	assign ADH = PCH_ADH ? PCH : 8'd0;				// Select Address High Bus input
+	assign ADL = PCL_ADL ? PCL : (ADD_ADL ? ADD : 8'd0);				// Select Address Low Bus input
+	assign ADH = PCH_ADH ? PCH : (DL_ADH ? DL : 8'd0);				// Select Address High Bus input
 	
 	// Select ALU inputs:
-	assign AI = SB_ADD ? SB : 8'd0;					// Select ALU input A
+	assign AI = Z_ADD ? 8'd0 : (SB_ADD ? SB : 8'd0);					// Select ALU input A
 	assign BI = (DB_ADD || nDB_ADD) ? DB : 8'd0;	// Select ALU input B
 	
 	
@@ -99,7 +99,7 @@ module CPU(
 	InstructionDecoder id (.clk_ph2(clk_ph2), .rst(rst), .cycle(cycle), .IR(IR), .I_cycle(I_cycle), .R_cycle(R_cycle), 
 						   .DL_DB(DL_DB), .AC_SB(AC_SB), .ADD_SB(ADD_SB), .PCL_ADL(PCL_ADL), .PCH_ADH(PCH_ADH), .SB_AC(SB_AC), .ADL_ABL(ADL_ABL), .ADH_ABH(ADH_ABH), 
 						   .I_PC(I_PC), .PCL_PCL(PCL_PCL), .PCH_PCH(PCH_PCH), .SB_ADD(SB_ADD), .nDB_ADD(nDB_ADD), .DB_ADD(DB_ADD), .SUMS(SUMS), .AVR_V(AVR_V), .ACR_C(ACR_C),
-						   .DBZ_Z(DBZ_Z), .SB_DB(SB_DB), .DB7_N(DB7_N), .IR5_C(IR5_C));
+						   .DBZ_Z(DBZ_Z), .SB_DB(SB_DB), .DB7_N(DB7_N), .IR5_C(IR5_C), .Z_ADD(Z_ADD), .ADD_ADL(ADD_ADL), .DL_ADH(DL_ADH));
 						   
 	// Program counter sets current... program counter: 					   
 	ProgramCounter pc (.rst(rst), .CLOCK_ph2(clk_ph2), .ADLin(8'd0), .ADHin(8'd0), .INC_en(I_PC), .PCLin_en(PCL_PCL), .PCHin_en(PCH_PCH),
@@ -115,9 +115,9 @@ module CPU(
 	
 	
 	// purely for viewing signals in simulation
-	assign Controls = {I_cycle, R_cycle, DL_DB, AC_SB, ADD_SB, PCL_ADL, PCH_ADH, SB_AC, ADL_ABL, ADH_ABH, I_PC, PCL_PCL, PCH_PCH, SB_ADD, nDB_ADD, DB_ADD, SUMS, AVR_V, 
-						ACR_C, DBZ_Z, SB_DB};
-	assign opcode = {IR, cycle};
-	assign ALURESULT = ALU_result;
+    assign IR_dbg = IR;
+    assign AC_dbg = AC;
+    assign cycle_dbg = cycle;
+    assign PC_dbg = {PCH, PCL};
 
 endmodule

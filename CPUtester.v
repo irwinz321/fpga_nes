@@ -32,9 +32,9 @@ module CPUtester;
 
 	// Outputs
 	wire [15:0] Addr_bus;
-	wire [20:0] Controls;
-	wire [10:0] opcode;
-	wire [7:0] ALURESULT;
+	wire [7:0] IR_dbg, AC_dbg;
+    wire [15:0] PC_dbg;
+    wire [2:0] cycle_dbg;
 
 	// Instantiate the Unit Under Test (UUT)
 	CPU uut (
@@ -43,9 +43,10 @@ module CPUtester;
 		.rst(rst), 
 		.Data_bus(Data_bus), 
 		.Addr_bus(Addr_bus), 
-		.Controls(Controls), 
-		.opcode(opcode),
-		.ALURESULT(ALURESULT)
+		.IR_dbg(IR_dbg),
+		.AC_dbg(AC_dbg),
+		.cycle_dbg(cycle_dbg),
+		.PC_dbg(PC_dbg)
 	);
 
 	initial begin
@@ -58,52 +59,36 @@ module CPUtester;
 		// Wait 100 ns for global reset to finish
 		#600;
 		rst = 1;
-        
-		// Add stimulus here
-//		Data_bus = 8'h69;
-//		
-//		#2400;
-//		Data_bus = 8'h07;
-//		
-//		#1000;
-//		Data_bus = 8'h69;
-//		
-//		#2400;
-//		Data_bus = 8'h02;
 
 	end
 	
+	// program:
 	always @(*) begin
 		case (Addr_bus) 
-			0: Data_bus = 8'h69;	
+			0: Data_bus = ADC_IMM;	
 			1: Data_bus = 8'h4;
-			2: Data_bus = 8'h38;
-			3: Data_bus = 8'he9;
-			4: Data_bus = 8'h4;
-			5: Data_bus = 8'h38;
-			6: Data_bus = 8'he9;
-			7: Data_bus = 8'h4;
-//			6: Data_bus = 8'h02;
-//			4: Data_bus = 8'h69;
-//			5: Data_bus = 8'h01;
-//			6: Data_bus = 8'h69;
-//			7: Data_bus = 8'd246;
-//			8: Data_bus = 8'h69;
-//			9: Data_bus = 8'd1;
-//			10: Data_bus = 8'h69;
-//			11: Data_bus = 8'd128;
-//			0: Data_bus = 8'h38;
-//			1: Data_bus = 8'h69;
-//			2: Data_bus = 8'h02;
+			2: Data_bus = ADC_ABS;
+			3: Data_bus = 8'h08;
+			4: Data_bus = 8'h00;
+			5: Data_bus = SEC;
+			6: Data_bus = SBC_IMM;
+			7: Data_bus = 8'h9;
+			8: Data_bus = 8'h5;
 			default: Data_bus = 8'd0;
 		endcase
 	end
 	
+	// clock phase gen:
 	always begin
 		#500;
 		clk_ph2 = !clk_ph2;
 		clk_ph1 = !clk_ph1;
 	end
+	
+	
+	// Opcode definitions:
+	localparam [7:0] ADC_IMM = 8'h69, SBC_IMM = 8'he9, SEC = 8'h38, CLC = 8'h18,
+                     ADC_ABS = 8'h6d;
       
 endmodule
 
