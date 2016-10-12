@@ -32,7 +32,7 @@ module CPUtester;
 
 	// Outputs
 	wire [15:0] Addr_bus;
-	wire [7:0] IR_dbg, AC_dbg;
+	wire [7:0] IR_dbg, AC_dbg, X_dbg, Y_dbg, P_dbg;
     wire [15:0] PC_dbg;
     wire [2:0] cycle_dbg;
 
@@ -46,7 +46,10 @@ module CPUtester;
 		.IR_dbg(IR_dbg),
 		.AC_dbg(AC_dbg),
 		.cycle_dbg(cycle_dbg),
-		.PC_dbg(PC_dbg)
+		.PC_dbg(PC_dbg),
+		.X_dbg(X_dbg),
+		.Y_dbg(Y_dbg),
+		.P_dbg(P_dbg)
 	);
 
 	initial begin
@@ -65,14 +68,14 @@ module CPUtester;
 	// program:
 	always @(*) begin
 		case (Addr_bus) 
-			0: Data_bus = ADC_IMM;	
-			1: Data_bus = 8'h4;
-			2: Data_bus = ADC_ZPG;
-			3: Data_bus = 8'h07;
-			4: Data_bus = SEC;
-			5: Data_bus = SBC_IMM;
-			6: Data_bus = 8'h9;
-			7: Data_bus = 8'h5;
+			0: Data_bus = INX;	
+			1: Data_bus = INY;
+			2: Data_bus = INX;
+			3: Data_bus = DEY;
+			4: Data_bus = TXA;
+			5: Data_bus = TAY;
+			6: Data_bus = DEY;
+			7: Data_bus = DEX;
 			default: Data_bus = 8'd0;
 		endcase
 	end
@@ -86,9 +89,13 @@ module CPUtester;
 	
 	
 	// Opcode definitions:
-	localparam [7:0] ADC_IMM = 8'h69, SBC_IMM = 8'he9, SEC = 8'h38, CLC = 8'h18,
+	localparam [7:0] ADC_IMM = 8'h69, SBC_IMM = 8'he9,  
                      ADC_ABS = 8'h6d,
-					 ADC_ZPG = 8'h65;
+					 ADC_ZPG = 8'h65,
+					 
+					 SEC = 8'h38, CLC = 8'h18,
+					 
+					 INX = 8'he8, INY = 8'hc8, DEX = 8'hca, DEY = 8'h88, TAX = 8'haa, TXA = 8'h8a, TAY = 8'ha8, TYA = 8'h98;
       
 endmodule
 

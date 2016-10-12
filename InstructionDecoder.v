@@ -2,9 +2,10 @@
 
 // Macro to reset all control lines:
 `define RESET_OUTPUTS I_cycle <= 0;	R_cycle <= 0; DL_DB <= 0; AC_SB <= 0; ADD_SB <= 0; PCL_ADL <= 0; PCH_ADH <= 0;		\
-					  SB_AC <= 0; ADL_ABL <= 0; ADH_ABH <= 0; I_PCint <= 0; PCL_PCL <= 0; PCH_PCH <= 0; SB_ADD <= 0;		\
+					  SB_AC <= 0; ADL_ABL <= 0; ADH_ABH <= 0; I_PCint <= 0; PCL_PCL <= 0; PCH_PCH <= 0; SB_ADD <= 0;	\
 					  nDB_ADD <= 0; DB_ADD <= 0; SUMS <= 0; ACR_C <= 0; AVR_V <= 0; DBZ_Z <= 0; SB_DB <= 0; DB7_N <= 0;	\
-					  IR5_C <= 0; Z_ADD <= 0; ADD_ADL <= 0; DL_ADH <= 0; DL_ADL <= 0; Z_ADH <= 0;
+					  IR5_C <= 0; Z_ADD <= 0; ADD_ADL <= 0; DL_ADH <= 0; DL_ADL <= 0; Z_ADH <= 0; SB_X <= 0; SB_Y <= 0; \
+                      X_SB <= 0; Y_SB <= 0; C_ONE <= 0; nONE_ADD <= 0; AC_DB <= 0;
 	
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
@@ -31,14 +32,14 @@ module InstructionDecoder(
 	input [2:0] cycle,							        // current instruction cycle
 	input [7:0] IR,								        // instruction register
 	output reg I_cycle, R_cycle,				        // increment/reset cycle counter
-	output reg DL_DB, AC_SB, ADD_SB,			        // bus control
+	output reg DL_DB, AC_SB, AC_DB, ADD_SB,		        // bus control
     output reg DL_ADH, DL_ADL,
 	output reg PCL_ADL, PCH_ADH, ADD_ADL, Z_ADH,        // bus control
-	output reg SB_AC, SB_DB,					        // bus control
+	output reg SB_AC, SB_DB, SB_X, SB_Y, X_SB, Y_SB,    // bus control
 	output reg ADL_ABL, ADH_ABH,				        // output address control
 	output reg PCL_PCL, PCH_PCH,				        // program counter control
 	output wire I_PC, 
-	output reg SB_ADD, nDB_ADD, DB_ADD,	Z_ADD,      	// ALU input control
+	output reg SB_ADD, nDB_ADD, DB_ADD,	Z_ADD, C_ONE, nONE_ADD,     	// ALU input control
     output reg SUMS,                    		        // ALU operation control
 	output reg AVR_V, ACR_C, DBZ_Z, DB7_N, IR5_C		// Processor status flag control
     );
@@ -64,26 +65,41 @@ module InstructionDecoder(
 							I_cycle <= 1;											// increment cycle counter
 					
 							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;	// output PC on address bus
-					
 							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;					// increment PC
-							
+				
 							ADD_SB <= 1; SB_AC <= 1; SB_DB <= 1;					// move ADD to AC through SB
 							
 							AVR_V <= 1; ACR_C <= 1; DBZ_Z <= 1;	DB7_N <= 1;			// add result flags to status reg
 						end
-						SEC, CLC: begin	// next cycle: fetch next byte
+						SEC, CLC, TXA, TAX, TYA, TAY: begin	// next cycle: fetch next byte
 							I_cycle <= 1;											// increment cycle counter
 					
 							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;	// output PC on address bus
-					
 							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;					// increment PC
 						end
+                        INX, DEX: begin  // next cycle: fetch next byte, store new value in X
+                            I_cycle <= 1;											// increment cycle counter
+					
+							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;	// output PC on address bus
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;					// increment PC
+                            
+                            ADD_SB <= 1; SB_X <= 1; SB_DB <= 1;                     // move ADD to X through SB
+                            DB7_N <= 1; DBZ_Z <= 1;                                 // add result flags to status reg
+                        end
+                        INY, DEY: begin  // next cycle: fetch next byte, store new value in Y
+                            I_cycle <= 1;											// increment cycle counter
+					
+							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;	// output PC on address bus
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;					// increment PC
+                            
+                            ADD_SB <= 1; SB_Y <= 1; SB_DB <= 1;                     // move ADD to Y through SB
+                            DB7_N <= 1; DBZ_Z <= 1;                                 // add result flags to status reg
+                        end
 							
 						default: begin  // next cycle: fetch next byte  (should only happen on reset)
 							I_cycle <= 1;											// increment cycle counter
 					
 							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;	// output PC on address bus
-					
 							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;					// increment PC
 						end
 					endcase
@@ -94,7 +110,6 @@ module InstructionDecoder(
 							R_cycle <= 1;													// reset cycle counter to 0
 							
 							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
-					
 							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
 							
 							DL_DB <= 1; DB_ADD <= 1; AC_SB <= 1; SB_ADD <= 1; SUMS <= 1;	// perform ALU add on AC, DL
@@ -103,7 +118,6 @@ module InstructionDecoder(
 							R_cycle <= 1;													// reset cycle counter to 0
 							
 							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
-					
 							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
 							
 							DL_DB <= 1; nDB_ADD <= 1; AC_SB <= 1; SB_ADD <= 1; SUMS <= 1;	// perform ALU add on AC, inverted DL
@@ -112,11 +126,74 @@ module InstructionDecoder(
 							R_cycle <= 1;													// reset cycle counter to 0
 							
 							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
-							
 							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
 							
 							IR5_C <= 1;														// set carry flag to bit 5 of current opcode (1 if SEC, 0 if CLC)
 						end
+                        INX: begin // next cycle: ALU add 1 to X register, fetch next opcode
+                            R_cycle <= 1;													// reset cycle counter to 0
+							
+							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
+                            
+                            X_SB <= 1; SB_DB <= 1; DB_ADD <= 1; Z_ADD <= 1; SUMS <= 1; C_ONE <= 1;  // add 1 to X register
+                        end
+                        DEX: begin // next cycle: ALU add -1 to X register, fetch next opcode
+                            R_cycle <= 1;													// reset cycle counter to 0
+							
+							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
+                            
+                            X_SB <= 1; SB_DB <= 1; DB_ADD <= 1; nONE_ADD <= 1; SUMS <= 1; C_ONE <= 1;  // add -1 to X register
+                        end
+                        TXA: begin // next cycle: send X register to AC through SB and DB, fetch next opcode
+                            R_cycle <= 1;													// reset cycle counter to 0
+							
+							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
+                            
+                            X_SB <= 1; SB_DB <= 1; SB_AC <= 1; DB7_N <= 1; DBZ_Z <= 1;
+                        end
+                        TAX: begin // next cycle: send AC register to X through SB and DB, fetch next opcode
+                            R_cycle <= 1;													// reset cycle counter to 0
+							
+							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
+                            
+                            SB_X <= 1; AC_DB <= 1; AC_SB <= 1; DB7_N <= 1; DBZ_Z <= 1;
+                        end
+                        INY: begin // next cycle: ALU add 1 to Y register, fetch next opcode
+                            R_cycle <= 1;													// reset cycle counter to 0
+							
+							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
+                            
+                            Y_SB <= 1; SB_DB <= 1; DB_ADD <= 1; Z_ADD <= 1; SUMS <= 1; C_ONE <= 1;  // add 1 to Y register
+                        end
+                        DEY: begin // next cycle: ALU add -1 to Y register, fetch next opcode
+                            R_cycle <= 1;													// reset cycle counter to 0
+							
+							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
+                            
+                            Y_SB <= 1; SB_DB <= 1; DB_ADD <= 1; nONE_ADD <= 1; SUMS <= 1; C_ONE <= 1;  // add 1 to Y register
+                        end
+                        TYA: begin // next cycle: send Y register to AC through SB and DB, fetch next opcode
+                            R_cycle <= 1;													// reset cycle counter to 0
+							
+							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
+                            
+                            Y_SB <= 1; SB_DB <= 1; SB_AC <= 1; DB7_N <= 1; DBZ_Z <= 1;
+                        end
+                        TAY: begin // next cycle: send AC register to Y through SB and DB, fetch next opcode
+                            R_cycle <= 1;													// reset cycle counter to 0
+							
+							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
+                            
+                            SB_Y <= 1; AC_DB <= 1; AC_SB <= 1; DB7_N <= 1; DBZ_Z <= 1;
+                        end
                         ADC_ABS: begin  // next cycle: store address low-byte in ALU, fetch address high-byte
                             I_cycle <= 1;   // increment cycle counter
                             
@@ -144,7 +221,6 @@ module InstructionDecoder(
                             R_cycle <= 1;													// reset cycle counter to 0
 							
 							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
-					
 							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
 							
 							DL_DB <= 1; DB_ADD <= 1; AC_SB <= 1; SB_ADD <= 1; SUMS <= 1;	// perform ALU add on AC, DL
@@ -157,7 +233,6 @@ module InstructionDecoder(
                             R_cycle <= 1;													// reset cycle counter to 0
 							
 							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
-					
 							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
 							
 							DL_DB <= 1; DB_ADD <= 1; AC_SB <= 1; SB_ADD <= 1; SUMS <= 1;	// perform ALU add on AC, DL
@@ -168,7 +243,6 @@ module InstructionDecoder(
 					R_cycle <= 1;											// reset cycle counter to 0
 					
 					PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;	// output PC on address bus
-								
 					I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;					// increment PC
 				end
 			endcase
@@ -178,12 +252,17 @@ module InstructionDecoder(
 	end
 	
 	// PC increment skipped if we're on a single-byte instruction:
-	assign I_PC = (cycle == 1'd1 && (IR == SEC || IR == CLC)) ? 1'd0 : I_PCint;
+	assign I_PC = (cycle == 1'd1 && (IR == SEC || IR == CLC || IR == INX || IR == INY || IR == DEX || IR == DEY || IR == TAX || IR == TXA ||
+									 IR == TAY || IR == TYA)) ? 1'd0 : I_PCint;
 	
 	// Opcode definitions:
-	localparam [7:0] ADC_IMM = 8'h69, SBC_IMM = 8'he9, SEC = 8'h38, CLC = 8'h18,
+	localparam [7:0] ADC_IMM = 8'h69, SBC_IMM = 8'he9,  
                      ADC_ABS = 8'h6d,
-					 ADC_ZPG = 8'h65;
+					 ADC_ZPG = 8'h65,
+					 
+					 SEC = 8'h38, CLC = 8'h18,
+					 
+					 INX = 8'he8, INY = 8'hc8, DEX = 8'hca, DEY = 8'h88, TAX = 8'haa, TXA = 8'h8a, TAY = 8'ha8, TYA = 8'h98;
 		
 
 endmodule
