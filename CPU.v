@@ -30,7 +30,8 @@ module CPU(
 	
 	// Signal declarations:
 	wire I_cycle, R_cycle, DL_DB, AC_SB, ADD_SB, PCL_ADL, PCH_ADH, SB_AC, ADL_ABL, ADH_ABH, I_PC, PCL_PCL, PCH_PCH, SB_ADD, nDB_ADD, DB_ADD, SUMS,
-			ACR_C, AVR_V, SB_DB, DBZ_Z, DB7_N, IR5_C, Z_ADD, ADD_ADL, DL_ADH, DL_ADL, Z_ADH, SB_X, SB_Y, X_SB, Y_SB, C_ONE, nONE_ADD, AC_DB;	// control lines
+			ACR_C, AVR_V, SB_DB, DBZ_Z, DB7_N, IR5_C, Z_ADD, ADD_ADL, DL_ADH, DL_ADL, Z_ADH, SB_X, SB_Y, X_SB, Y_SB, C_ONE, nONE_ADD, AC_DB, ADL_ADD,
+            S_cycle, SB_ADH;	// control lines
 	wire [7:0] IR;							// instruction register
 	wire [2:0] cycle;						// cycle counter
 	wire [7:0] PCL, PCH;					// program counter high and low byte registers
@@ -46,11 +47,11 @@ module CPU(
 	assign SB = AC_SB ? AC : (ADD_SB ? ADD : (X_SB ? X : (Y_SB ? Y : 8'd0)));   // Select System Bus input (AC, ADD, X, Y, ...)
 	assign DB = DL_DB ? DL : (AC_DB ? AC : (SB_DB ? SB : 8'd0));	            // Select Data Bus input (DL, AC, SB, ...)
 	assign ADL = PCL_ADL ? PCL : (ADD_ADL ? ADD : (DL_ADL ? DL : 8'd0));		// Select Address Low Bus input (PCL, ADD, DL, ...)
-	assign ADH = Z_ADH ? 8'd0 : (PCH_ADH ? PCH : (DL_ADH ? DL : 8'd0));			// Select Address High Bus input (ZERO, PCH, DL, ...)
+	assign ADH = Z_ADH ? 8'd0 : (PCH_ADH ? PCH : (DL_ADH ? DL : (SB_ADH ? SB : 8'd0)));			// Select Address High Bus input (ZERO, PCH, DL, SB...)
 	
 	// Select ALU inputs:
 	assign AI = Z_ADD ? 8'd0 : (nONE_ADD ? 8'hfe : (SB_ADD ? SB : 8'd0));    // Select ALU input A (ZERO, 0xFE, SB)
-	assign BI = (DB_ADD || nDB_ADD) ? DB : 8'd0;	    // Select ALU input B (DB, ...)
+	assign BI = (DB_ADD || nDB_ADD) ? DB : (ADL_ADD ? ADL : 8'd0);	    // Select ALU input B (DB, ADL)
     assign CI = C_ONE ? 1'd1 : P[0];                    // Select ALU carry input (ONE or status reg carry)
 	
 	
@@ -103,14 +104,15 @@ module CPU(
 	end
 	
 	// Instruction controller sets IR and Cycle Counter:
-	InstructionController ic (.rst(rst), .clk_ph1(clk_ph1), .I_cycle(I_cycle), .R_cycle(R_cycle), .PD(PD), .IR(IR), .cycle(cycle));
+	InstructionController ic (.rst(rst), .clk_ph1(clk_ph1), .I_cycle(I_cycle), .R_cycle(R_cycle), .S_cycle(S_cycle), .PD(PD), .IR(IR), .cycle(cycle));
 	
 	// Instruction decoder uses IR and Cycle counter to determine which control lines active on NEXT cycle:
-	InstructionDecoder id (.clk_ph2(clk_ph2), .rst(rst), .cycle(cycle), .IR(IR), .I_cycle(I_cycle), .R_cycle(R_cycle), 
+	InstructionDecoder id (.clk_ph2(clk_ph2), .rst(rst), .cycle(cycle), .IR(IR), .I_cycle(I_cycle), .R_cycle(R_cycle), .carry(C),
 						   .DL_DB(DL_DB), .AC_SB(AC_SB), .ADD_SB(ADD_SB), .PCL_ADL(PCL_ADL), .PCH_ADH(PCH_ADH), .SB_AC(SB_AC), .ADL_ABL(ADL_ABL), .ADH_ABH(ADH_ABH), 
 						   .I_PC(I_PC), .PCL_PCL(PCL_PCL), .PCH_PCH(PCH_PCH), .SB_ADD(SB_ADD), .nDB_ADD(nDB_ADD), .DB_ADD(DB_ADD), .SUMS(SUMS), .AVR_V(AVR_V), .ACR_C(ACR_C),
 						   .DBZ_Z(DBZ_Z), .SB_DB(SB_DB), .DB7_N(DB7_N), .IR5_C(IR5_C), .Z_ADD(Z_ADD), .ADD_ADL(ADD_ADL), .DL_ADH(DL_ADH), .DL_ADL(DL_ADL), .Z_ADH(Z_ADH),
-                           .X_SB(X_SB), .Y_SB(Y_SB), .SB_X(SB_X), .SB_Y(SB_Y), .C_ONE(C_ONE), .nONE_ADD(nONE_ADD), .AC_DB(AC_DB));
+                           .X_SB(X_SB), .Y_SB(Y_SB), .SB_X(SB_X), .SB_Y(SB_Y), .C_ONE(C_ONE), .nONE_ADD(nONE_ADD), .AC_DB(AC_DB), .S_cycle(S_cycle), .SB_ADH(SB_ADH),
+						   .ADL_ADD(ADL_ADD));
 						   
 	// Program counter sets current... program counter: 					   
 	ProgramCounter pc (.rst(rst), .CLOCK_ph2(clk_ph2), .ADLin(8'd0), .ADHin(8'd0), .INC_en(I_PC), .PCLin_en(PCL_PCL), .PCHin_en(PCH_PCH),

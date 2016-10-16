@@ -21,7 +21,7 @@
 module InstructionController(
 	input wire rst, 		// Reset signal
     input clk_ph1,			// clock phase 1
-    input I_cycle, R_cycle, // increment/reset cycle counter lines
+    input I_cycle, R_cycle, S_cycle, // increment/reset/skip cycle counter lines
 	input [7:0] PD,			// pre-decode register
     output reg [7:0] IR,    // instruction register
     output reg [2:0] cycle  // current instruction cycle
@@ -32,9 +32,10 @@ wire [2:0] next_cycle;  // Next cycle count
 wire [7:0] opcode;      // Opcode to put into instruction register
     
 // Decide what the next cycle count should be:
-assign next_cycle = (R_cycle == 1) ? 3'd0                           // if reset_cycle, reset count to 0
-                                   : (I_cycle == 1) ? cycle + 3'd1  // else, if increment_cycle, increment count
-                                                    : cycle;        // else, don't change count
+assign next_cycle = (R_cycle == 1) ? 3'd0                                             // if reset_cycle, reset count to 0
+                                   : (I_cycle == 1) ? cycle + 3'd1                    // else, if increment_cycle, increment count
+                                                    : (S_cycle == 1) ? cycle + 3'd2   // else, if skip_cycle, increment count twice
+                                                                     : cycle;         // else, don't change count
     
 // Decide what gets loaded into the instruction register (change only on T1 cycle):
 assign opcode = (next_cycle == 1) ? PD      // on next T1, load new opcode

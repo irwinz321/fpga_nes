@@ -69,13 +69,21 @@ module CPUtester;
 	always @(*) begin
 		case (Addr_bus) 
 			0: Data_bus = INX;	
-			1: Data_bus = INY;
-			2: Data_bus = INX;
-			3: Data_bus = DEY;
-			4: Data_bus = TXA;
-			5: Data_bus = TAY;
-			6: Data_bus = DEY;
-			7: Data_bus = DEX;
+			1: Data_bus = INX;
+			2: Data_bus = ADC_ZPX;
+			3: Data_bus = 8'h0a;
+			4: Data_bus = ADC_ABX;
+			5: Data_bus = 8'h04;
+			6: Data_bus = 8'h01;
+			7: Data_bus = ADC_ABX;
+			8: Data_bus = 8'hff;
+			9: Data_bus = 8'h01;
+			10: Data_bus = 8'h00;
+			11: Data_bus = 9'h00;
+			
+			12: Data_bus = 8'h05;
+			16'h0106: Data_bus = 8'h06;
+			16'h0201: Data_bus = 8'h07;
 			default: Data_bus = 8'd0;
 		endcase
 	end
@@ -92,6 +100,8 @@ module CPUtester;
 	localparam [7:0] ADC_IMM = 8'h69, SBC_IMM = 8'he9,  
                      ADC_ABS = 8'h6d,
 					 ADC_ZPG = 8'h65,
+                     ADC_ZPX = 8'h75,
+                     ADC_ABX = 8'h7d,
 					 
 					 SEC = 8'h38, CLC = 8'h18,
 					 
