@@ -68,10 +68,10 @@ module CPUtester;
 	// program:
 	always @(*) begin
 		case (Addr_bus) 
-			0: Data_bus = INX;	
-			1: Data_bus = INX;
-			2: Data_bus = ADC_INX;
-			3: Data_bus = 8'h0a;
+			0: Data_bus = INY;	
+			1: Data_bus = INY;
+			2: Data_bus = ADC_INY;
+			3: Data_bus = 8'd12;
 			4: Data_bus = ADC_ABX;
 			5: Data_bus = 8'h04;
 			6: Data_bus = 8'h01;
@@ -81,10 +81,11 @@ module CPUtester;
 			10: Data_bus = 8'h00;
 			11: Data_bus = 9'h00;
 			
-			12: Data_bus = 8'h05;
+			12: Data_bus = 8'hff;
             13: Data_bus = 8'h01;
 			16'h0105: Data_bus = 8'h05;
 			16'h0106: Data_bus = 8'h06;
+			16'h0107: Data_bus = 8'h01;
 			16'h0201: Data_bus = 8'h07;
 			default: Data_bus = 8'd0;
 		endcase
