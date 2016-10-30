@@ -63,6 +63,7 @@ module InstructionDecoder(
 			case (cycle)
 				0: begin
 					case (IR)
+						ADC_IMM, SBC_IMM, ADC_ABS, ADC_ZPG, ADC_ZPX, ADC_ABX, ADC_ABY, ADC_INX: begin  // next cycle: store ALU result, fetch next byte
 							I_cycle <= 1;											// increment cycle counter
 					
 							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;	// output PC on address bus
