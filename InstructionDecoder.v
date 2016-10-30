@@ -63,7 +63,6 @@ module InstructionDecoder(
 			case (cycle)
 				0: begin
 					case (IR)
-						ADC_IMM, SBC_IMM, ADC_ABS, ADC_ZPG, ADC_ZPX, ADC_ABX: begin  // next cycle: store ALU result, fetch next byte
 							I_cycle <= 1;											// increment cycle counter
 					
 							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;	// output PC on address bus
@@ -209,7 +208,7 @@ module InstructionDecoder(
                             
                             DL_ADL <= 1; Z_ADH <= 1; ADL_ABL <= 1; ADH_ABH <= 1;    // output low-byte (DL) and zeros to address bus
                         end
-                        ADC_ZPX: begin  // next cycle: add base address (DL) to X register
+                        ADC_ZPX, ADC_INX: begin  // next cycle: add base address (DL) to X register
                             I_cycle <= 1;   // increment cycle counter
                             
                             DL_ADL <= 1; Z_ADH <= 1; ADL_ABL <= 1; ADH_ABH <= 1;    // output base address low-byte (DL) and zeros to address bus - result ignored
@@ -223,6 +222,14 @@ module InstructionDecoder(
                             I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
                             
                             DL_DB <= 1; DB_ADD <= 1; X_SB <= 1; SB_ADD <= 1; SUMS <= 1;     // send low-byte to ALU, add X register
+                        end
+                        ADC_ABY: begin  // next cycle: add base address low-byte to Y register, fetch base address high-byte
+                            I_cycle <= 1;   // increment cycle counter
+                            
+                            PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
+                            I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
+                            
+                            DL_DB <= 1; DB_ADD <= 1; Y_SB <= 1; SB_ADD <= 1; SUMS <= 1;     // send low-byte to ALU, add Y register
                         end
 							
 					endcase
@@ -247,7 +254,7 @@ module InstructionDecoder(
                             
                             ADD_ADL <= 1; ADL_ABL <= 1; Z_ADH <= 1; ADH_ABH <= 1; // send low-byte (ALU) to ABL, send zeros to ABH
                         end
-                        ADC_ABX: begin  // next cycle: if carry=1, add 1 to BAH; if carry=0, output address (skip cycle 3)
+                        ADC_ABX, ADC_ABY: begin  // next cycle: if carry=1, add 1 to BAH; if carry=0, output address (skip cycle 3)
                             if (carry) begin
                                 S_cycle <= 1;
                                 
@@ -257,14 +264,21 @@ module InstructionDecoder(
                                 I_cycle <= 1;
                             end
                             
-                            ADD_ADL <= 1; ADL_ABL <= 1; DL_ADH <= 1; ADH_ABH <= 1;  // send (low-byte + X) to ABL, send high-byte to ABH
+                            ADD_ADL <= 1; ADL_ABL <= 1; DL_ADH <= 1; ADH_ABH <= 1;  // send (low-byte + X/Y) to ABL, send high-byte to ABH
                             
+                        end
+                        ADC_INX: begin  // next cycle: output ALU result and zeros to address bus to retrieve low-byte, increment ALU result
+                            I_cycle <= 1;   // increment cycle counter
+                            
+                            ADD_ADL <= 1; ADL_ABL <= 1; Z_ADH <= 1; ADH_ABH <= 1; // send low-byte (ALU) to ABL, send zeros to ABH
+                            
+                            ADD_SB <= 1; SB_DB <= 1; DB_ADD <= 1; Z_ADD <= 1; SUMS <= 1; C_ONE <= 1; // add 1 to (low-byte + X) 
                         end
                     endcase
                 end
                 3: begin
                     case (IR)
-                        ADC_ABS, ADC_ZPX, ADC_ABX: begin  // next cycle: perform add, fetch next opcode
+                        ADC_ABS, ADC_ZPX, ADC_ABX, ADC_ABY: begin  // next cycle: perform add, fetch next opcode
                             R_cycle <= 1;													// reset cycle counter to 0
 							
 							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
@@ -272,20 +286,32 @@ module InstructionDecoder(
 							
 							DL_DB <= 1; DB_ADD <= 1; AC_SB <= 1; SB_ADD <= 1; SUMS <= 1;	// perform ALU add on AC, DL
                         end
+                        ADC_INX: begin // next cycle: store address low-byte, fetch address high byte
+                            I_cycle <= 1;   // increment cycle counter
+                            
+                            DL_DB <= 1; DB_ADD <= 1; Z_ADD <= 1; SUMS <= 1;     // send low-byte to ALU, add zero
+                            
+                            ADD_ADL <= 1; ADL_ABL <= 1; Z_ADH <= 1; ADH_ABH <= 1; // send low-byte (ALU) to ABL, send zeros to ABH                            
+                        end
                     endcase
                 end
                 4: begin
                     case (IR)
-                        ADC_ABX: begin // next cycle: output address to fetch data
+                        ADC_ABX, ADC_ABY: begin // next cycle: output address to fetch data
                             I_cycle <= 1;
                             
                             ADD_SB <= 1; SB_ADH <= 1; ADH_ABH <= 1; // send incremented high-byte to ABH (low-byte already in ABL)
+                        end
+                        ADC_INX: begin  //next cycle: send out fetched address to get data
+                            I_cycle <= 1;   // increment cycle counter
+                            
+                            ADD_ADL <= 1; ADL_ABL <= 1; DL_ADH <= 1; ADH_ABH <= 1; // send low-byte (ALU) to ABL, send high-byte to ABH  
                         end
                     endcase
                 end
                 5: begin
                     case (IR)
-                        ADC_ABX: begin // perform add, fetch next opcode
+                        ADC_ABX, ADC_ABY, ADC_INX: begin // perform add, fetch next opcode
                             R_cycle <= 1;													// reset cycle counter to 0
 							
 							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
@@ -317,6 +343,9 @@ module InstructionDecoder(
 					 ADC_ZPG = 8'h65,
                      ADC_ZPX = 8'h75,
                      ADC_ABX = 8'h7d,
+                     ADC_ABY = 8'h79,
+                     ADC_INX = 8'h61,
+                     ADC_INY = 8'h71,
 					 
 					 SEC = 8'h38, CLC = 8'h18,
 					 

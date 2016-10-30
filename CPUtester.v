@@ -70,7 +70,7 @@ module CPUtester;
 		case (Addr_bus) 
 			0: Data_bus = INX;	
 			1: Data_bus = INX;
-			2: Data_bus = ADC_ZPX;
+			2: Data_bus = ADC_INX;
 			3: Data_bus = 8'h0a;
 			4: Data_bus = ADC_ABX;
 			5: Data_bus = 8'h04;
@@ -82,6 +82,8 @@ module CPUtester;
 			11: Data_bus = 9'h00;
 			
 			12: Data_bus = 8'h05;
+            13: Data_bus = 8'h01;
+			16'h0105: Data_bus = 8'h05;
 			16'h0106: Data_bus = 8'h06;
 			16'h0201: Data_bus = 8'h07;
 			default: Data_bus = 8'd0;
@@ -102,6 +104,9 @@ module CPUtester;
 					 ADC_ZPG = 8'h65,
                      ADC_ZPX = 8'h75,
                      ADC_ABX = 8'h7d,
+                     ADC_ABY = 8'h79,
+                     ADC_INX = 8'h61,
+                     ADC_INY = 8'h71,
 					 
 					 SEC = 8'h38, CLC = 8'h18,
 					 
