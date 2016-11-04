@@ -31,7 +31,7 @@ module CPU(
 	// Signal declarations:
 	wire I_cycle, R_cycle, DL_DB, AC_SB, ADD_SB, PCL_ADL, PCH_ADH, SB_AC, ADL_ABL, ADH_ABH, I_PC, PCL_PCL, PCH_PCH, SB_ADD, nDB_ADD, DB_ADD, SUMS,
 			ACR_C, AVR_V, SB_DB, DBZ_Z, DB7_N, IR5_C, Z_ADD, ADD_ADL, DL_ADH, DL_ADL, Z_ADH, SB_X, SB_Y, X_SB, Y_SB, C_ONE, nONE_ADD, AC_DB, ADL_ADD,
-            S_cycle, SB_ADH;	// control lines
+            S_cycle, SB_ADH, C_ZERO;	// control lines
 	wire [7:0] IR;							// instruction register
 	wire [2:0] cycle;						// cycle counter
 	wire [7:0] PCL, PCH;					// program counter high and low byte registers
@@ -52,7 +52,7 @@ module CPU(
 	// Select ALU inputs:
 	assign AI = Z_ADD ? 8'd0 : (nONE_ADD ? 8'hfe : (SB_ADD ? SB : 8'd0));    // Select ALU input A (ZERO, 0xFE, SB)
 	assign BI = (DB_ADD || nDB_ADD) ? DB : (ADL_ADD ? ADL : 8'd0);	    // Select ALU input B (DB, ADL)
-    assign CI = C_ONE ? 1'd1 : P[0];                    // Select ALU carry input (ONE or status reg carry)
+    assign CI = C_ONE ? 1'd1 : (C_ZERO ? 1'd0 : P[0]);                    // Select ALU carry input (ONE, ZERO, or status reg carry)
 	
 	
 	// Latch registers on phase 1:
@@ -112,7 +112,7 @@ module CPU(
 						   .I_PC(I_PC), .PCL_PCL(PCL_PCL), .PCH_PCH(PCH_PCH), .SB_ADD(SB_ADD), .nDB_ADD(nDB_ADD), .DB_ADD(DB_ADD), .SUMS(SUMS), .AVR_V(AVR_V), .ACR_C(ACR_C),
 						   .DBZ_Z(DBZ_Z), .SB_DB(SB_DB), .DB7_N(DB7_N), .IR5_C(IR5_C), .Z_ADD(Z_ADD), .ADD_ADL(ADD_ADL), .DL_ADH(DL_ADH), .DL_ADL(DL_ADL), .Z_ADH(Z_ADH),
                            .X_SB(X_SB), .Y_SB(Y_SB), .SB_X(SB_X), .SB_Y(SB_Y), .C_ONE(C_ONE), .nONE_ADD(nONE_ADD), .AC_DB(AC_DB), .S_cycle(S_cycle), .SB_ADH(SB_ADH),
-						   .ADL_ADD(ADL_ADD));
+						   .ADL_ADD(ADL_ADD), .C_ZERO(C_ZERO));
 						   
 	// Program counter sets current... program counter: 					   
 	ProgramCounter pc (.rst(rst), .CLOCK_ph2(clk_ph2), .ADLin(8'd0), .ADHin(8'd0), .INC_en(I_PC), .PCLin_en(PCL_PCL), .PCHin_en(PCH_PCH),
