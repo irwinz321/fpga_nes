@@ -68,27 +68,16 @@ module CPUtester;
 	// program:
 	always @(*) begin
 		case (Addr_bus) 
-			0: Data_bus = INY;	
-			1: Data_bus = INY;
+			0: Data_bus = ADC_IMM;	
+			1: Data_bus = 8'h64;
 			2: Data_bus = SEC;
-			3: Data_bus = ADC_INY;
-			4: Data_bus = 8'd13;
-			5: Data_bus = ADC_ABX;
-			6: Data_bus = 8'h04;
-			7: Data_bus = 8'h01;
-			8: Data_bus = ADC_ABX;
-			9: Data_bus = 8'hff;
-			10: Data_bus = 8'h01;
-			11: Data_bus = 8'h00;
-			12: Data_bus = 9'h00;
-			
-			13: Data_bus = 8'hff;
-            14: Data_bus = 8'h01;
-			16'h0105: Data_bus = 8'h05;
-			16'h0106: Data_bus = 8'h06;
-			16'h0107: Data_bus = 8'h01;
-			16'h0201: Data_bus = 8'h07;
-			default: Data_bus = 8'd0;
+			3: Data_bus = SBC_IMM;
+			4: Data_bus = 8'h64;
+			5: Data_bus = CLC;
+			6: Data_bus = SBC_IMM;
+			7: Data_bus = 8'h0;
+			8: Data_bus = 8'h00;
+			9: Data_bus = 8'h00;
 		endcase
 	end
 	
@@ -102,17 +91,26 @@ module CPUtester;
 	
 	// Opcode definitions:
 	localparam [7:0] ADC_IMM = 8'h69, SBC_IMM = 8'he9,  
-                     ADC_ABS = 8'h6d,
-					 ADC_ZPG = 8'h65,
-                     ADC_ZPX = 8'h75,
-                     ADC_ABX = 8'h7d,
-                     ADC_ABY = 8'h79,
-                     ADC_INX = 8'h61,
-                     ADC_INY = 8'h71,
+                     ADC_ABS = 8'h6d, SBC_ABS = 8'hed,
+					 ADC_ZPG = 8'h65, SBC_ZPG = 8'he5,
+                     ADC_ZPX = 8'h75, SBC_ZPX = 8'hf5,
+                     ADC_ABX = 8'h7d, SBC_ABX = 8'hfd,
+                     ADC_ABY = 8'h79, SBC_ABY = 8'hf9,
+                     ADC_INX = 8'h61, SBC_INX = 8'he1,
+                     ADC_INY = 8'h71, SBC_INY = 8'hf1,
 					 
 					 SEC = 8'h38, CLC = 8'h18,
 					 
-					 INX = 8'he8, INY = 8'hc8, DEX = 8'hca, DEY = 8'h88, TAX = 8'haa, TXA = 8'h8a, TAY = 8'ha8, TYA = 8'h98;
+					 INX = 8'he8, INY = 8'hc8, DEX = 8'hca, DEY = 8'h88, TAX = 8'haa, TXA = 8'h8a, TAY = 8'ha8, TYA = 8'h98,
+					 
+					 CMP_IMM = 8'hc9,
+					 CMP_ABS = 8'hcd,
+					 CMP_ZPG = 8'hc5,
+					 CMP_ZPX = 8'hd5,
+					 CMP_ABX = 8'hdd,
+					 CMP_ABY = 8'hd9,
+					 CMP_INX = 8'hc1,
+					 CMP_INY = 8'hd1;
       
 endmodule
 

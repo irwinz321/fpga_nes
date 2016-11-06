@@ -55,7 +55,7 @@ module ALU(
     end
 	
 	// Set overflow flag (set if both inputs are same sign, but output is a different sign):
-	assign OVFout = (Ain[7] && Bin[7] && (!RES[7])) || ((!Ain[7]) && (!Bin[7]) && RES[7]);
+	assign OVFout = (Ain[7] && Bin[7] && (!RES[7])) || ((!Ain[7]) && (!Bin[7]) && RES[7]);		// TODO: check this - also, Bin probably needs to take Cin into account for 2s comp.
 	//assign OVFout = (Ain[7] ~^ Bint[7]) & (Cout ^ RES[7]);
 	 
 endmodule
