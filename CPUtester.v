@@ -68,16 +68,16 @@ module CPUtester;
 	// program:
 	always @(*) begin
 		case (Addr_bus) 
-			0: Data_bus = ADC_IMM;	
-			1: Data_bus = 8'h64;
-			2: Data_bus = SEC;
-			3: Data_bus = SBC_IMM;
-			4: Data_bus = 8'h64;
-			5: Data_bus = CLC;
-			6: Data_bus = SBC_IMM;
-			7: Data_bus = 8'h0;
-			8: Data_bus = 8'h00;
-			9: Data_bus = 8'h00;
+			0: Data_bus = LDA_IMM;	
+			1: Data_bus = 8'h00;
+			2: Data_bus = LDX_IMM;
+			3: Data_bus = 8'h0a;
+			4: Data_bus = LDY_IMM;
+			5: Data_bus = 8'h10;
+			6: Data_bus = TXA;
+			7: Data_bus = CLC;
+			8: Data_bus = ADC_IMM;
+			9: Data_bus = 8'h10;
 		endcase
 	end
 	
@@ -103,9 +103,11 @@ module CPUtester;
 					 
 					 INX = 8'he8, INY = 8'hc8, DEX = 8'hca, DEY = 8'h88, TAX = 8'haa, TXA = 8'h8a, TAY = 8'ha8, TYA = 8'h98,
 					 
-					 CMP_IMM = 8'hc9,
-					 CMP_ABS = 8'hcd,
-					 CMP_ZPG = 8'hc5,
+					 LDA_IMM = 8'ha9, LDX_IMM = 8'ha2, LDY_IMM = 8'ha0,
+					 
+					 CMP_IMM = 8'hc9, CPX_IMM = 8'he0, CPY_IMM = 8'hc0,
+					 CMP_ABS = 8'hcd, CPX_ZPG = 8'he4, CPY_ZPG = 8'hc4,
+					 CMP_ZPG = 8'hc5, CPX_ABS = 8'hec, CPY_ABS = 8'hcc,
 					 CMP_ZPX = 8'hd5,
 					 CMP_ABX = 8'hdd,
 					 CMP_ABY = 8'hd9,

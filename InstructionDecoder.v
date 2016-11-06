@@ -6,7 +6,7 @@
 					  nDB_ADD <= 0; DB_ADD <= 0; SUMS <= 0; ACR_C <= 0; AVR_V <= 0; DBZ_Z <= 0; SB_DB <= 0; DB7_N <= 0;	\
 					  IR5_C <= 0; Z_ADD <= 0; ADD_ADL <= 0; DL_ADH <= 0; DL_ADL <= 0; Z_ADH <= 0; SB_X <= 0; SB_Y <= 0; \
                       X_SB <= 0; Y_SB <= 0; C_ONE <= 0; nONE_ADD <= 0; AC_DB <= 0; ADL_ADD <= 0; S_cycle <= 0; SB_ADH <= 0; \
-					  C_ZERO <= 0;
+					  C_ZERO <= 0; DB_SB <= 0;
 	
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
@@ -38,7 +38,7 @@ module InstructionDecoder(
     output reg DL_ADH, DL_ADL,
 	output reg PCL_ADL, PCH_ADH, ADD_ADL, Z_ADH,        // bus control
 	output reg SB_AC, SB_DB, SB_X, SB_Y, X_SB, Y_SB,    // bus control
-    output reg SB_ADH,                                                          
+    output reg SB_ADH, DB_SB,                                                         
 	output reg ADL_ABL, ADH_ABH,				        // output address control
 	output reg PCL_PCL, PCH_PCH,				        // program counter control
 	output wire I_PC, 
@@ -83,7 +83,8 @@ module InstructionDecoder(
 							
 							ACR_C <= 1; DBZ_Z <= 1;	DB7_N <= 1;			// add result flags to status reg
 						end
-						SEC, CLC, TXA, TAX, TYA, TAY: begin	// next cycle: fetch next byte
+						SEC, CLC, TXA, TAX, TYA, TAY,
+						LDA_IMM, LDX_IMM, LDY_IMM: begin	// next cycle: fetch next byte
 							I_cycle <= 1;											// increment cycle counter
 					
 							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;	// output PC on address bus
@@ -107,6 +108,12 @@ module InstructionDecoder(
                             ADD_SB <= 1; SB_Y <= 1; SB_DB <= 1;                     // move ADD to Y through SB
                             DB7_N <= 1; DBZ_Z <= 1;                                 // add result flags to status reg
                         end
+						//LDA_IMM, LDX_IMM, LDY_IMM: begin // next cycle: fetch next byte
+						//	I_cycle <= 1;											// increment cycle counter
+					//
+						//	PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;	// output PC on address bus
+						//	I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;					// increment PC
+						//end
 							
 						default: begin  // next cycle: fetch next byte  (should only happen on reset)
 							I_cycle <= 1;											// increment cycle counter
@@ -272,6 +279,33 @@ module InstructionDecoder(
                             DL_ADL <= 1; Z_ADH <= 1; ADL_ABL <= 1; ADH_ABH <= 1;    // output low-byte (DL) and zeros to address bus
 							
 							ADL_ADD <= 1; Z_ADD <= 1; C_ONE <= 1; SUMS <= 1; // send low-byte to ALU, add 1
+						end
+						LDA_IMM: begin // next cycle: load data into AC
+							R_cycle <= 1;													// reset cycle counter to 0
+							
+							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
+							
+							DL_DB <= 1; DB_SB <= 1; SB_AC <= 1;				// load data into AC
+							DB7_N <= 1; DBZ_Z <= 1;                                 // add result flags to status reg
+						end
+						LDX_IMM: begin // next cycle: load data into X
+							R_cycle <= 1;													// reset cycle counter to 0
+							
+							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
+							
+							DL_DB <= 1; DB_SB <= 1; SB_X <= 1;				// load data into X
+							DB7_N <= 1; DBZ_Z <= 1;                                 // add result flags to status reg
+						end
+						LDY_IMM: begin // next cycle: load data into Y
+							R_cycle <= 1;													// reset cycle counter to 0
+							
+							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
+							
+							DL_DB <= 1; DB_SB <= 1; SB_Y <= 1;				// load data into Y
+							DB7_N <= 1; DBZ_Z <= 1;                                 // add result flags to status reg
 						end
 							
 					endcase
@@ -476,6 +510,8 @@ module InstructionDecoder(
 					 SEC = 8'h38, CLC = 8'h18,
 					 
 					 INX = 8'he8, INY = 8'hc8, DEX = 8'hca, DEY = 8'h88, TAX = 8'haa, TXA = 8'h8a, TAY = 8'ha8, TYA = 8'h98,
+					 
+					 LDA_IMM = 8'ha9, LDX_IMM = 8'ha2, LDY_IMM = 8'ha0,
 					 
 					 CMP_IMM = 8'hc9, CPX_IMM = 8'he0, CPY_IMM = 8'hc0,
 					 CMP_ABS = 8'hcd, CPX_ZPG = 8'he4, CPY_ZPG = 8'hc4,
