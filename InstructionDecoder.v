@@ -75,7 +75,7 @@ module InstructionDecoder(
 							
 							AVR_V <= 1; ACR_C <= 1; DBZ_Z <= 1;	DB7_N <= 1;			// add result flags to status reg
 						end
-						CMP_IMM: begin	// next cycle: set flags, fetch next byte
+						CMP_IMM, CPX_IMM, CPY_IMM: begin	// next cycle: set flags, fetch next byte
 							I_cycle <= 1;											// increment cycle counter
 					
 							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;	// output PC on address bus
@@ -141,6 +141,22 @@ module InstructionDecoder(
 							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
 							
 							DL_DB <= 1; nDB_ADD <= 1; AC_SB <= 1; SB_ADD <= 1; SUMS <= 1; C_ONE <= 1;	// perform ALU add on AC, inverted DL (set carry to 1 automatically)
+						end
+						CPX_IMM: begin // next cycle: ALU subtract (add inverse), fetch next opcode
+							R_cycle <= 1;													// reset cycle counter to 0
+							
+							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
+							
+							DL_DB <= 1; nDB_ADD <= 1; X_SB <= 1; SB_ADD <= 1; SUMS <= 1; C_ONE <= 1;	// perform ALU add on X, inverted DL (set carry to 1 automatically)
+						end
+						CPY_IMM: begin // next cycle: ALU subtract (add inverse), fetch next opcode
+							R_cycle <= 1;													// reset cycle counter to 0
+							
+							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
+							
+							DL_DB <= 1; nDB_ADD <= 1; Y_SB <= 1; SB_ADD <= 1; SUMS <= 1; C_ONE <= 1;	// perform ALU add on Y, inverted DL (set carry to 1 automatically)
 						end
 						SEC, CLC: begin	// next cycle: set or clear carry flag in status register, fetch next opcode
 							R_cycle <= 1;													// reset cycle counter to 0
@@ -461,9 +477,9 @@ module InstructionDecoder(
 					 
 					 INX = 8'he8, INY = 8'hc8, DEX = 8'hca, DEY = 8'h88, TAX = 8'haa, TXA = 8'h8a, TAY = 8'ha8, TYA = 8'h98,
 					 
-					 CMP_IMM = 8'hc9,
-					 CMP_ABS = 8'hcd,
-					 CMP_ZPG = 8'hc5,
+					 CMP_IMM = 8'hc9, CPX_IMM = 8'he0, CPY_IMM = 8'hc0,
+					 CMP_ABS = 8'hcd, CPX_ZPG = 8'he4, CPY_ZPG = 8'hc4,
+					 CMP_ZPG = 8'hc5, CPX_ABS = 8'hec, CPY_ABS = 8'hcc,
 					 CMP_ZPX = 8'hd5,
 					 CMP_ABX = 8'hdd,
 					 CMP_ABY = 8'hd9,
