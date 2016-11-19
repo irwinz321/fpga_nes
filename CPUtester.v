@@ -68,16 +68,24 @@ module CPUtester;
 	// program:
 	always @(*) begin
 		case (Addr_bus) 
-			0: Data_bus = LDA_IMM;	
-			1: Data_bus = 8'h00;
-			2: Data_bus = LDX_IMM;
+			0: Data_bus = LDX_IMM;	
+			1: Data_bus = 8'h01;
+			2: Data_bus = JMP_IND;
 			3: Data_bus = 8'h0a;
-			4: Data_bus = LDY_IMM;
-			5: Data_bus = 8'h10;
-			6: Data_bus = TXA;
-			7: Data_bus = CLC;
-			8: Data_bus = ADC_IMM;
-			9: Data_bus = 8'h10;
+			4: Data_bus = 8'h10;
+			5: Data_bus = TXA;
+			6: Data_bus = ADC_IMM;
+			7: Data_bus = 8'h10;
+			8: Data_bus = 8'h00;
+			
+			16'h100a: Data_bus = 8'h0d;
+			16'h100b: Data_bus = 8'h10;
+			16'h100c: Data_bus = 8'h00;
+			16'h100d: Data_bus = JMP_ABS;
+			16'h100e: Data_bus = 8'h05;
+			16'h100f: Data_bus = 8'h00;
+			
+			default: Data_bus = 8'hff;
 		endcase
 	end
 	
@@ -112,7 +120,10 @@ module CPUtester;
 					 CMP_ABX = 8'hdd,
 					 CMP_ABY = 8'hd9,
 					 CMP_INX = 8'hc1,
-					 CMP_INY = 8'hd1;
+					 CMP_INY = 8'hd1,
+					 
+					 JMP_ABS = 8'h4c,
+					 JMP_IND = 8'h6c;
       
 endmodule
 
