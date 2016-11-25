@@ -68,22 +68,26 @@ module CPUtester;
 	// program:
 	always @(*) begin
 		case (Addr_bus) 
-			0: Data_bus = LDX_IMM;	
-			1: Data_bus = 8'h01;
-			2: Data_bus = JMP_IND;
-			3: Data_bus = 8'h0a;
-			4: Data_bus = 8'h10;
-			5: Data_bus = TXA;
-			6: Data_bus = ADC_IMM;
-			7: Data_bus = 8'h10;
+			0: Data_bus = LDA_IMM;	
+			1: Data_bus = 8'h0f;
+			2: Data_bus = JMP_ABS;
+			3: Data_bus = 8'h01;
+			4: Data_bus = 8'h01;
+			5: Data_bus = 8'h00;
+			6: Data_bus = BPL;
+			7: Data_bus = 8'hf8;
 			8: Data_bus = 8'h00;
 			
-			16'h100a: Data_bus = 8'h0d;
-			16'h100b: Data_bus = 8'h10;
-			16'h100c: Data_bus = 8'h00;
-			16'h100d: Data_bus = JMP_ABS;
-			16'h100e: Data_bus = 8'h05;
-			16'h100f: Data_bus = 8'h00;
+			16'h00fd: Data_bus = 8'h00;
+			16'h00fe: Data_bus = ADC_IMM;
+			16'h00ff: Data_bus = 8'h05;
+			16'h0100: Data_bus = 8'h00;
+			16'h0101: Data_bus = BPL;
+			16'h0102: Data_bus = 8'hfb;
+			16'h0103: Data_bus = 8'h00;
+			16'h010c: Data_bus = ADC_IMM;
+			16'h010d: Data_bus = 8'h05;
+			16'h010d: Data_bus = 8'h00;
 			
 			default: Data_bus = 8'hff;
 		endcase
@@ -123,7 +127,9 @@ module CPUtester;
 					 CMP_INY = 8'hd1,
 					 
 					 JMP_ABS = 8'h4c,
-					 JMP_IND = 8'h6c;
+					 JMP_IND = 8'h6c,
+		
+                     BPL = 8'h10, BMI = 8'h30, BVC = 8'h50, BVS = 8'h70, BCC = 8'h90, BCS = 8'hb0, BNE = 8'hd0, BEQ = 8'hf0;
       
 endmodule
 

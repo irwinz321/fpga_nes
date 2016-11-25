@@ -6,7 +6,7 @@
 					  nDB_ADD <= 0; DB_ADD <= 0; SUMS <= 0; ACR_C <= 0; AVR_V <= 0; DBZ_Z <= 0; SB_DB <= 0; DB7_N <= 0;	\
 					  IR5_C <= 0; Z_ADD <= 0; ADD_ADL <= 0; DL_ADH <= 0; DL_ADL <= 0; Z_ADH <= 0; SB_X <= 0; SB_Y <= 0; \
                       X_SB <= 0; Y_SB <= 0; C_ONE <= 0; nONE_ADD <= 0; AC_DB <= 0; ADL_ADD <= 0; S_cycle <= 0; SB_ADH <= 0; \
-					  C_ZERO <= 0; DB_SB <= 0; ADL_PCL <= 0; ADH_PCH <= 0;
+					  C_ZERO <= 0; DB_SB <= 0; ADL_PCL <= 0; ADH_PCH <= 0; PCH_DB <= 0;
 	
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
@@ -32,9 +32,10 @@ module InstructionDecoder(
 	input rst,									        // reset signal
 	input [2:0] cycle,							        // current instruction cycle
 	input [7:0] IR,								        // instruction register
-    input carry,                                        // ALU carry bit (for page crossing)
+    input carry, A_sign,                                // ALU carry bit and A input sign bit (for page crossing)
+    input [7:0] P,                                      // processor status register (for branching)
 	output reg I_cycle, R_cycle, S_cycle,		        // increment/reset/skip cycle counter
-	output reg DL_DB, AC_SB, AC_DB, ADD_SB,		        // bus control
+	output reg DL_DB, AC_SB, AC_DB, ADD_SB,	PCH_DB,     // bus control
     output reg DL_ADH, DL_ADL,
 	output reg PCL_ADL, PCH_ADH, ADD_ADL, Z_ADH,        // bus control
 	output reg ADL_PCL, ADH_PCH,
@@ -49,7 +50,7 @@ module InstructionDecoder(
     );
 	
 	// Declare signals:
-	reg I_PCint;	// internal PC increment control - allows skipping of PC increment for single-byte instructions
+	reg I_PCint;	// internal PC increment control - allows skipping of PC increment for single-byte instructions3
 	
 	// Decode current opcode based on cycle:
 	always @(posedge clk_ph2) begin
@@ -86,7 +87,8 @@ module InstructionDecoder(
 						end
 						SEC, CLC, TXA, TAX, TYA, TAY,
 						LDA_IMM, LDX_IMM, LDY_IMM, 
-                        JMP_ABS, JMP_IND: begin	// next cycle: fetch next byte
+                        JMP_ABS, JMP_IND,
+                        BPL: begin	// next cycle: fetch next byte
 							I_cycle <= 1;											// increment cycle counter
 					
 							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;	// output PC on address bus
@@ -311,6 +313,20 @@ module InstructionDecoder(
 							
 							DL_DB <= 1; DB_ADD <= 1; Z_ADD <= 1; SUMS <= 1; C_ZERO <= 1;    // send low-byte to ALU, add zero
 						end	
+                        BPL: begin  // check flag, next cycle: take branch if flag condition met, fetch next opcode if not
+                            if (P[7] == 0) begin    // result is positive - take branch
+                                I_cycle <= 1;   // increment cycle counter
+                                
+                                DL_DB <= 1; DB_SB <= 1; SB_ADD <= 1; 
+                                ADL_ADD <= 1; C_ZERO <= 1; SUMS <= 1;  // add offset (DL) to PC low-byte
+                            end
+                            else begin
+                                R_cycle <= 1;   // reset cycle counter to 0
+                            end    
+							
+                            PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
+                            I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
+                        end
 					endcase
 				end
                 2: begin
@@ -384,6 +400,21 @@ module InstructionDecoder(
                             
                             ADD_SB <= 1; SB_DB <= 1; DB_ADD <= 1; Z_ADD <= 1; SUMS <= 1; C_ONE <= 1; // add 1 to low-byte 
                         end
+                        BPL: begin  // next cycle: if carry/borrow, add 1 to PC high byte; else, output new PC
+                            if (carry != A_sign) begin  // either a carry or a borrow happened -> fix PCH
+                                I_cycle <= 1;   // increment cycle counter
+                                
+                                PCH_DB <= 1; DB_ADD <= 1; SUMS <= 1; nONE_ADD <= A_sign; C_ONE <= 1; // add 1 to PCH if offset positive, subtract 1 if offset negative
+                            end
+                            else begin
+                                R_cycle <= 1;   // reset cycle counter to 0
+                                I_PCint <= 1;  // increment PC
+                            end
+							
+                            ADL_PCL <= 1;
+                            ADD_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1; // output {PCL+offset, PCH}
+                            
+                        end
                     endcase
                 end
                 3: begin
@@ -430,6 +461,11 @@ module InstructionDecoder(
                             PCL_PCL <= 1; PCH_PCH <= 1;							// don't increment PC
                             
                             DL_DB <= 1; DB_ADD <= 1; Z_ADD <= 1; SUMS <= 1; C_ZERO <= 1;    // send low-byte to ALU, add zero
+                        end
+                        BPL: begin  // next cycle: fetch next opcode
+                            R_cycle <= 1;   // reset cycle counter to zero
+                            
+                            ADD_SB <= 1; SB_ADH <= 1; ADH_ABH <= 1; ADH_PCH <= 1; I_PCint <= 1; // output corrected address, store high byte in PC and increment
                         end
                     endcase
                 end
@@ -558,7 +594,7 @@ module InstructionDecoder(
 					 CMP_INY = 8'hd1,
 					 
 					 JMP_ABS = 8'h4c,
-					 JMP_IND = 8'h6c;
+					 JMP_IND = 8'h6c,
 		
-
+                     BPL = 8'h10, BMI = 8'h30, BVC = 8'h50, BVS = 8'h70, BCC = 8'h90, BCS = 8'hb0, BNE = 8'hd0, BEQ = 8'hf0;
 endmodule
