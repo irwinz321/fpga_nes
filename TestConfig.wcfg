@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="C:/Users/Zachary/Documents/Xilinx/NEStest/CPUtester_isim_beh.wdb" id="1" type="auto">
+         <top_modules>
+            <top_module name="CPUtester" />
+            <top_module name="glbl" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <WVObjectSize size="12" />
+   <wvobject fp_name="/CPUtester/PC_dbg" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">PC_dbg[15:0]</obj_property>
+      <obj_property name="ObjectShortName">PC_dbg[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/CPUtester/Addr_bus" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">Addr_bus[15:0]</obj_property>
+      <obj_property name="ObjectShortName">Addr_bus[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/CPUtester/Data_bus" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">Data_bus[7:0]</obj_property>
+      <obj_property name="ObjectShortName">Data_bus[7:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/CPUtester/IR_dbg" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">IR_dbg[7:0]</obj_property>
+      <obj_property name="ObjectShortName">IR_dbg[7:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/CPUtester/AC_dbg" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">AC_dbg[7:0]</obj_property>
+      <obj_property name="ObjectShortName">AC_dbg[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/CPUtester/X_dbg" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">X_dbg[7:0]</obj_property>
+      <obj_property name="ObjectShortName">X_dbg[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/CPUtester/Y_dbg" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">Y_dbg[7:0]</obj_property>
+      <obj_property name="ObjectShortName">Y_dbg[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/CPUtester/P_dbg" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">P_dbg[7:0]</obj_property>
+      <obj_property name="ObjectShortName">P_dbg[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/CPUtester/cycle_dbg" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">cycle_dbg[2:0]</obj_property>
+      <obj_property name="ObjectShortName">cycle_dbg[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/CPUtester/clk_ph1" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">clk_ph1</obj_property>
+      <obj_property name="ObjectShortName">clk_ph1</obj_property>
+   </wvobject>
+   <wvobject fp_name="/CPUtester/clk_ph2" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">clk_ph2</obj_property>
+      <obj_property name="ObjectShortName">clk_ph2</obj_property>
+   </wvobject>
+   <wvobject fp_name="/CPUtester/rst" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rst</obj_property>
+      <obj_property name="ObjectShortName">rst</obj_property>
+   </wvobject>
+</wave_config>
