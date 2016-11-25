@@ -88,7 +88,7 @@ module InstructionDecoder(
 						SEC, CLC, TXA, TAX, TYA, TAY,
 						LDA_IMM, LDX_IMM, LDY_IMM, 
                         JMP_ABS, JMP_IND,
-                        BPL: begin	// next cycle: fetch next byte
+                        BPL, BMI, BVC, BVS, BCC, BCS, BNE, BEQ: begin	// next cycle: fetch next byte
 							I_cycle <= 1;											// increment cycle counter
 					
 							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;	// output PC on address bus
@@ -313,8 +313,16 @@ module InstructionDecoder(
 							
 							DL_DB <= 1; DB_ADD <= 1; Z_ADD <= 1; SUMS <= 1; C_ZERO <= 1;    // send low-byte to ALU, add zero
 						end	
-                        BPL: begin  // check flag, next cycle: take branch if flag condition met, fetch next opcode if not
-                            if (P[7] == 0) begin    // result is positive - take branch
+                        BPL, BMI, BVC, BVS, BCC, BCS, BNE, BEQ: begin  // check flag, next cycle: take branch if flag condition met, fetch next opcode if not
+                            if ((IR == BPL && P[7] == 0) || 		// BPL: result is positive - take branch
+							    (IR == BMI && P[7] == 1) ||
+								(IR == BVC && P[6] == 0) ||
+								(IR == BVS && P[6] == 1) || 
+								(IR == BCC && P[0] == 0) ||
+								(IR == BCS && P[0] == 1) ||
+								(IR == BNE && P[1] == 0) ||
+								(IR == BEQ && P[1] == 1)) 	begin		// BMI: result is negative - take branch
+								
                                 I_cycle <= 1;   // increment cycle counter
                                 
                                 DL_DB <= 1; DB_SB <= 1; SB_ADD <= 1; 
@@ -400,7 +408,7 @@ module InstructionDecoder(
                             
                             ADD_SB <= 1; SB_DB <= 1; DB_ADD <= 1; Z_ADD <= 1; SUMS <= 1; C_ONE <= 1; // add 1 to low-byte 
                         end
-                        BPL: begin  // next cycle: if carry/borrow, add 1 to PC high byte; else, output new PC
+                        BPL, BMI, BVC, BVS, BCC, BCS, BNE, BEQ: begin  // next cycle: if carry/borrow, add 1 to PC high byte; else, output new PC
                             if (carry != A_sign) begin  // either a carry or a borrow happened -> fix PCH
                                 I_cycle <= 1;   // increment cycle counter
                                 
@@ -462,7 +470,7 @@ module InstructionDecoder(
                             
                             DL_DB <= 1; DB_ADD <= 1; Z_ADD <= 1; SUMS <= 1; C_ZERO <= 1;    // send low-byte to ALU, add zero
                         end
-                        BPL: begin  // next cycle: fetch next opcode
+                        BPL, BMI, BVC, BVS, BCC, BCS, BNE, BEQ: begin  // next cycle: fetch next opcode
                             R_cycle <= 1;   // reset cycle counter to zero
                             
                             ADD_SB <= 1; SB_ADH <= 1; ADH_ABH <= 1; ADH_PCH <= 1; I_PCint <= 1; // output corrected address, store high byte in PC and increment
@@ -595,6 +603,6 @@ module InstructionDecoder(
 					 
 					 JMP_ABS = 8'h4c,
 					 JMP_IND = 8'h6c,
-		
+						
                      BPL = 8'h10, BMI = 8'h30, BVC = 8'h50, BVS = 8'h70, BCC = 8'h90, BCS = 8'hb0, BNE = 8'hd0, BEQ = 8'hf0;
 endmodule
