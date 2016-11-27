@@ -6,7 +6,7 @@
 					  nDB_ADD <= 0; DB_ADD <= 0; SUMS <= 0; ACR_C <= 0; AVR_V <= 0; DBZ_Z <= 0; SB_DB <= 0; DB7_N <= 0;	\
 					  IR5_C <= 0; Z_ADD <= 0; ADD_ADL <= 0; DL_ADH <= 0; DL_ADL <= 0; Z_ADH <= 0; SB_X <= 0; SB_Y <= 0; \
                       X_SB <= 0; Y_SB <= 0; C_ONE <= 0; nONE_ADD <= 0; AC_DB <= 0; ADL_ADD <= 0; S_cycle <= 0; SB_ADH <= 0; \
-					  C_ZERO <= 0; DB_SB <= 0; ADL_PCL <= 0; ADH_PCH <= 0; PCH_DB <= 0;
+					  C_ZERO <= 0; DB_SB <= 0; ADL_PCL <= 0; ADH_PCH <= 0; PCH_DB <= 0; SB_S <= 0; I_S <= 0; D_S <= 0;
 	
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
@@ -40,7 +40,8 @@ module InstructionDecoder(
 	output reg PCL_ADL, PCH_ADH, ADD_ADL, Z_ADH,        // bus control
 	output reg ADL_PCL, ADH_PCH,
 	output reg SB_AC, SB_DB, SB_X, SB_Y, X_SB, Y_SB,    // bus control
-    output reg SB_ADH, DB_SB,                                                         
+    output reg SB_ADH, DB_SB,                       
+    output reg SB_S, I_S, D_S,                          
 	output reg ADL_ABL, ADH_ABH,				        // output address control
 	output reg PCL_PCL, PCH_PCH,				        // program counter control
 	output wire I_PC, 
@@ -85,7 +86,7 @@ module InstructionDecoder(
 							
 							ACR_C <= 1; DBZ_Z <= 1;	DB7_N <= 1;			// add result flags to status reg
 						end
-						SEC, CLC, TXA, TAX, TYA, TAY,
+						SEC, CLC, TXA, TAX, TYA, TAY, TXS,
 						LDA_IMM, LDX_IMM, LDY_IMM, 
                         JMP_ABS, JMP_IND,
                         BPL, BMI, BVC, BVS, BCC, BCS, BNE, BEQ: begin	// next cycle: fetch next byte
@@ -202,6 +203,14 @@ module InstructionDecoder(
 							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
                             
                             SB_X <= 1; AC_DB <= 1; AC_SB <= 1; DB7_N <= 1; DBZ_Z <= 1;
+                        end
+                        TXS: begin  // next cycle: send X register to S through SB, fetch next opcode
+                            R_cycle <= 1;													// reset cycle counter to 0
+							
+							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
+                            
+                            X_SB <= 1; SB_S <= 1;     // transfer X to S
                         end
                         INY: begin // next cycle: ALU add 1 to Y register, fetch next opcode
                             R_cycle <= 1;													// reset cycle counter to 0
@@ -572,9 +581,9 @@ module InstructionDecoder(
 	
 	end
 	
-	// PC increment skipped if we're on a single-byte instruction:
+	// PC increment skipped if we're on a single-byte instruction (implied addressing):
 	assign I_PC = (cycle == 1'd1 && (IR == SEC || IR == CLC || IR == INX || IR == INY || IR == DEX || IR == DEY || IR == TAX || IR == TXA ||
-									 IR == TAY || IR == TYA)) ? 1'd0 : I_PCint;
+									 IR == TAY || IR == TYA || IR == TXS)) ? 1'd0 : I_PCint;
 	
 	// Opcode definitions:
 	localparam [7:0] ADC_IMM = 8'h69, SBC_IMM = 8'he9,  
@@ -589,6 +598,7 @@ module InstructionDecoder(
 					 SEC = 8'h38, CLC = 8'h18,
 					 
 					 INX = 8'he8, INY = 8'hc8, DEX = 8'hca, DEY = 8'h88, TAX = 8'haa, TXA = 8'h8a, TAY = 8'ha8, TYA = 8'h98,
+                     TXS = 8'h9a, TSX = 8'hba, PHA = 8'h48, PLA = 8'h68, PHP = 8'h08, PLP = 8'h28,
 					 
 					 LDA_IMM = 8'ha9, LDX_IMM = 8'ha2, LDY_IMM = 8'ha0,
 					 

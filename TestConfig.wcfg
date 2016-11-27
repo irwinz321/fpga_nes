@@ -10,7 +10,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="12" />
+   <WVObjectSize size="13" />
    <wvobject fp_name="/CPUtester/PC_dbg" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">PC_dbg[15:0]</obj_property>
       <obj_property name="ObjectShortName">PC_dbg[15:0]</obj_property>
@@ -42,6 +42,11 @@
    <wvobject fp_name="/CPUtester/Y_dbg" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">Y_dbg[7:0]</obj_property>
       <obj_property name="ObjectShortName">Y_dbg[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/CPUtester/S_dbg" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">S_dbg[7:0]</obj_property>
+      <obj_property name="ObjectShortName">S_dbg[7:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/CPUtester/P_dbg" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">P_dbg[7:0]</obj_property>

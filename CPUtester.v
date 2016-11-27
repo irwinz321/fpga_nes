@@ -32,7 +32,7 @@ module CPUtester;
 
 	// Outputs
 	wire [15:0] Addr_bus;
-	wire [7:0] IR_dbg, AC_dbg, X_dbg, Y_dbg, P_dbg;
+	wire [7:0] IR_dbg, AC_dbg, X_dbg, Y_dbg, P_dbg, S_dbg;
     wire [15:0] PC_dbg;
     wire [2:0] cycle_dbg;
 
@@ -49,7 +49,8 @@ module CPUtester;
 		.PC_dbg(PC_dbg),
 		.X_dbg(X_dbg),
 		.Y_dbg(Y_dbg),
-		.P_dbg(P_dbg)
+		.P_dbg(P_dbg),
+		.S_dbg(S_dbg)
 	);
 
 	initial begin
@@ -68,11 +69,11 @@ module CPUtester;
 	// program:
 	always @(*) begin
 		case (Addr_bus) 
-			0: Data_bus = LDA_IMM;	
+			0: Data_bus = LDX_IMM;	
 			1: Data_bus = 8'h0f;
-			2: Data_bus = JMP_ABS;
-			3: Data_bus = 8'h01;
-			4: Data_bus = 8'h01;
+			2: Data_bus = TXS;
+			3: Data_bus = LDX_IMM;
+			4: Data_bus = 8'h00;
 			5: Data_bus = 8'h00;
 			6: Data_bus = BPL;
 			7: Data_bus = 8'hf8;
@@ -114,6 +115,7 @@ module CPUtester;
 					 SEC = 8'h38, CLC = 8'h18,
 					 
 					 INX = 8'he8, INY = 8'hc8, DEX = 8'hca, DEY = 8'h88, TAX = 8'haa, TXA = 8'h8a, TAY = 8'ha8, TYA = 8'h98,
+                     TXS = 8'h9a, TSX = 8'hba, PHA = 8'h48, PLA = 8'h68, PHP = 8'h08, PLP = 8'h28,
 					 
 					 LDA_IMM = 8'ha9, LDX_IMM = 8'ha2, LDY_IMM = 8'ha0,
 					 
@@ -128,7 +130,7 @@ module CPUtester;
 					 
 					 JMP_ABS = 8'h4c,
 					 JMP_IND = 8'h6c,
-		
+						
                      BPL = 8'h10, BMI = 8'h30, BVC = 8'h50, BVS = 8'h70, BCC = 8'h90, BCS = 8'hb0, BNE = 8'hd0, BEQ = 8'hf0;
       
 endmodule
