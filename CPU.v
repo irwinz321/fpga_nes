@@ -31,7 +31,7 @@ module CPU(
 	// Signal declarations:
 	wire I_cycle, R_cycle, DL_DB, AC_SB, ADD_SB, PCL_ADL, PCH_ADH, SB_AC, ADL_ABL, ADH_ABH, I_PC, PCL_PCL, PCH_PCH, SB_ADD, nDB_ADD, DB_ADD, SUMS,
 			ACR_C, AVR_V, SB_DB, DBZ_Z, DB7_N, IR5_C, Z_ADD, ADD_ADL, DL_ADH, DL_ADL, Z_ADH, SB_X, SB_Y, X_SB, Y_SB, C_ONE, nONE_ADD, AC_DB, ADL_ADD,
-            S_cycle, SB_ADH, C_ZERO, DB_SB, ADL_PCL, ADH_PCH, PCH_DB, SB_S, I_S, D_S;	// control lines
+            S_cycle, SB_ADH, C_ZERO, DB_SB, ADL_PCL, ADH_PCH, PCH_DB, SB_S, I_S, D_S, S_SB;	// control lines
 	wire [7:0] IR;							// instruction register
 	wire [2:0] cycle;						// cycle counter
 	wire [7:0] PCL, PCH;					// program counter high and low byte registers
@@ -45,7 +45,7 @@ module CPU(
 	
 	// Select inputs to internal busses:
 	assign SB = AC_SB ? AC : (ADD_SB ? ADD : (X_SB ? X : (Y_SB ? Y : 8'd0)));   // Select System Bus input (AC, ADD, X, Y, ...)
-	assign DB = DL_DB ? DL : (AC_DB ? AC : (SB_DB ? SB : (PCH_DB ? PCH : 8'd0)));	            // Select Data Bus input (DL, AC, SB, ...)
+	assign DB = DL_DB ? DL : (AC_DB ? AC : ((SB_DB & S_SB) ? S : (SB_DB ? SB : (PCH_DB ? PCH : 8'd0))));	            // Select Data Bus input (DL, AC, SB, ...)
 	assign ADL = PCL_ADL ? PCL : (ADD_ADL ? ADD : (DL_ADL ? DL : 8'd0));		// Select Address Low Bus input (PCL, ADD, DL, ...)
 	assign ADH = Z_ADH ? 8'd0 : (PCH_ADH ? PCH : (DL_ADH ? DL : ((SB_ADH & DB_SB) ? DB : (SB_ADH ? SB : 8'd0))));	// Select Address High Bus input (ZERO, PCH, DL, SB...)
 	
@@ -81,7 +81,7 @@ module CPU(
 			P[6] <= (AVR_V ? OVFreg : P[6]);	                // Status reg bit 6 - overflow flag
 			P[7] <=	(DB7_N ? DB[7] : P[7]);		                // Status reg bit 7 - negative/sign flag
             
-            X <= (SB_X & DB_SB) ? DB : (SB_X ? SB : X);         // X Index has inputs from SB (or DB when SB/DB are connected) - holds value otherwise
+            X <= (SB_X & DB_SB) ? DB : ((SB_X & S_SB) ? S : (SB_X ? SB : X));         // X Index has inputs from SB (or DB when SB/DB are connected) - holds value otherwise
             Y <= (SB_Y & DB_SB) ? DB : (SB_Y ? SB : Y);         // Y Index has inputs from SB (or DB when SB/DB are connected) - holds value otherwise
             
             S <= I_S ? S + 8'h01 : (D_S ? S - 8'h01 : (SB_S ? SB : S)); // Stack point can be incremented/decremented, or get input from SB - holds otherwise
@@ -115,7 +115,8 @@ module CPU(
 						   .I_PC(I_PC), .PCL_PCL(PCL_PCL), .PCH_PCH(PCH_PCH), .SB_ADD(SB_ADD), .nDB_ADD(nDB_ADD), .DB_ADD(DB_ADD), .SUMS(SUMS), .AVR_V(AVR_V), .ACR_C(ACR_C),
 						   .DBZ_Z(DBZ_Z), .SB_DB(SB_DB), .DB7_N(DB7_N), .IR5_C(IR5_C), .Z_ADD(Z_ADD), .ADD_ADL(ADD_ADL), .DL_ADH(DL_ADH), .DL_ADL(DL_ADL), .Z_ADH(Z_ADH),
                            .X_SB(X_SB), .Y_SB(Y_SB), .SB_X(SB_X), .SB_Y(SB_Y), .C_ONE(C_ONE), .nONE_ADD(nONE_ADD), .AC_DB(AC_DB), .S_cycle(S_cycle), .SB_ADH(SB_ADH),
-						   .ADL_ADD(ADL_ADD), .C_ZERO(C_ZERO), .DB_SB(DB_SB), .ADL_PCL(ADL_PCL), .ADH_PCH(ADH_PCH), .PCH_DB(PCH_DB), .SB_S(SB_S), .I_S(I_S), .D_S(D_S));
+						   .ADL_ADD(ADL_ADD), .C_ZERO(C_ZERO), .DB_SB(DB_SB), .ADL_PCL(ADL_PCL), .ADH_PCH(ADH_PCH), .PCH_DB(PCH_DB), .SB_S(SB_S), .I_S(I_S), .D_S(D_S),
+						   .S_SB(S_SB));
 						   
 	// Program counter sets current... program counter: 					   
 	ProgramCounter pc (.rst(rst), .CLOCK_ph2(clk_ph2), .ADLin(ADL), .ADHin(ADH), .INC_en(I_PC), .PCLin_en(PCL_PCL), .PCHin_en(PCH_PCH),

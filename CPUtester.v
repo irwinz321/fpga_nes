@@ -69,12 +69,12 @@ module CPUtester;
 	// program:
 	always @(*) begin
 		case (Addr_bus) 
-			0: Data_bus = LDX_IMM;	
-			1: Data_bus = 8'h0f;
-			2: Data_bus = TXS;
-			3: Data_bus = LDX_IMM;
-			4: Data_bus = 8'h00;
-			5: Data_bus = 8'h00;
+			0: Data_bus = TSX;	
+			1: Data_bus = LDX_IMM;
+			2: Data_bus = 8'h01;
+			3: Data_bus = TXS;
+			4: Data_bus = ADC_IMM;
+			5: Data_bus = 8'h02;
 			6: Data_bus = BPL;
 			7: Data_bus = 8'hf8;
 			8: Data_bus = 8'h00;
