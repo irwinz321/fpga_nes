@@ -69,28 +69,31 @@ module CPUtester;
 	// program:
 	always @(*) begin
 		case (Addr_bus) 
-			0: Data_bus = TSX;	
-			1: Data_bus = LDX_IMM;
-			2: Data_bus = 8'h01;
-			3: Data_bus = TXS;
-			4: Data_bus = ADC_IMM;
-			5: Data_bus = 8'h02;
-			6: Data_bus = BPL;
-			7: Data_bus = 8'hf8;
+		
+			// program/data:
+			0: Data_bus = LDX_IMM;	
+			1: Data_bus = 8'hfd;
+			2: Data_bus = TXS;
+			3: Data_bus = PLA;
+			4: Data_bus = PLA;
+			5: Data_bus = ADC_IMM;
+			6: Data_bus = 8'h41;
+			7: Data_bus = 8'h00;
 			8: Data_bus = 8'h00;
 			
 			16'h00fd: Data_bus = 8'h00;
-			16'h00fe: Data_bus = ADC_IMM;
-			16'h00ff: Data_bus = 8'h05;
-			16'h0100: Data_bus = 8'h00;
-			16'h0101: Data_bus = BPL;
-			16'h0102: Data_bus = 8'hfb;
-			16'h0103: Data_bus = 8'h00;
-			16'h010c: Data_bus = ADC_IMM;
-			16'h010d: Data_bus = 8'h05;
-			16'h010d: Data_bus = 8'h00;
+			16'h00fe: Data_bus = 8'h00;
+			16'h00ff: Data_bus = 8'h00;
 			
-			default: Data_bus = 8'hff;
+			// stack:
+			16'h01fa: Data_bus = 8'h00;
+			16'h01fb: Data_bus = 8'h00;
+			16'h01fc: Data_bus = 8'h00;
+			16'h01fd: Data_bus = 8'h01;
+			16'h01fe: Data_bus = 8'hff;
+			16'h01ff: Data_bus = 8'h00;
+			
+			default: Data_bus = 8'h00;
 		endcase
 	end
 	

@@ -7,7 +7,7 @@
 					  IR5_C <= 0; Z_ADD <= 0; ADD_ADL <= 0; DL_ADH <= 0; DL_ADL <= 0; Z_ADH <= 0; SB_X <= 0; SB_Y <= 0; \
                       X_SB <= 0; Y_SB <= 0; C_ONE <= 0; nONE_ADD <= 0; AC_DB <= 0; ADL_ADD <= 0; S_cycle <= 0; SB_ADH <= 0; \
 					  C_ZERO <= 0; DB_SB <= 0; ADL_PCL <= 0; ADH_PCH <= 0; PCH_DB <= 0; SB_S <= 0; I_S <= 0; D_S <= 0;	\
-					  S_SB <= 0;
+					  S_SB <= 0; S_ADL <= 0; ONE_ADH <= 0;
 	
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
@@ -42,7 +42,7 @@ module InstructionDecoder(
 	output reg ADL_PCL, ADH_PCH,
 	output reg SB_AC, SB_DB, SB_X, SB_Y, X_SB, Y_SB,    // bus control
     output reg SB_ADH, DB_SB,                       
-    output reg SB_S, S_SB, I_S, D_S,                          
+    output reg SB_S, S_ADL, ONE_ADH, S_SB, I_S, D_S,                          
 	output reg ADL_ABL, ADH_ABH,				        // output address control
 	output reg PCL_PCL, PCH_PCH,				        // program counter control
 	output wire I_PC, 
@@ -220,6 +220,11 @@ module InstructionDecoder(
 							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
                             
                             S_SB <= 1; SB_X <= 1; SB_DB <= 1; DB7_N <= 1; DBZ_Z <= 1;	// transfer S to X, set flags
+						end
+						PLA: begin	// next cycle: put stack pointer out on address bus (ignore results), increment pointer
+							I_cycle <= 1;	// increment cycle counter
+							
+							S_ADL <= 1; ADL_ABL <= 1; ONE_ADH <= 1; ADH_ABH <= 1; I_S <= 1;	// output {0x01, S}, increment pointer
 						end
                         INY: begin // next cycle: ALU add 1 to Y register, fetch next opcode
                             R_cycle <= 1;													// reset cycle counter to 0
@@ -441,6 +446,11 @@ module InstructionDecoder(
                             ADD_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1; // output {PCL+offset, PCH}
                             
                         end
+						PLA: begin	// next cycle: put real stack pointer out on address bus
+							I_cycle <= 1;	// increment cycle counter
+							
+							S_ADL <= 1; ADL_ABL <= 1; ONE_ADH <= 1; ADH_ABH <= 1;	// output {0x01, S+1}, hold pointer
+						end
                     endcase
                 end
                 3: begin
@@ -493,6 +503,15 @@ module InstructionDecoder(
                             
                             ADD_SB <= 1; SB_ADH <= 1; ADH_ABH <= 1; ADH_PCH <= 1; I_PCint <= 1; // output corrected address, store high byte in PC and increment
                         end
+						PLA: begin	// next cycle: fetch next opcode, store data in accumulator, set flags
+							R_cycle <= 1; 	// reset cycle counter to zero
+							
+							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
+							
+							DL_DB <= 1; DB_SB <= 1; SB_AC <= 1;			// store value in accumulator
+							DB7_N <= 1; DBZ_Z <= 1;                                 // add result flags to status reg
+						end
                     endcase
                 end
                 4: begin
@@ -592,7 +611,7 @@ module InstructionDecoder(
 	
 	// PC increment skipped if we're on a single-byte instruction (implied addressing):
 	assign I_PC = (cycle == 1'd1 && (IR == SEC || IR == CLC || IR == INX || IR == INY || IR == DEX || IR == DEY || IR == TAX || IR == TXA ||
-									 IR == TAY || IR == TYA || IR == TXS || IR == TSX)) ? 1'd0 : I_PCint;
+									 IR == TAY || IR == TYA || IR == TXS || IR == TSX || IR == PLA || IR == PLP || IR == PHP || IR == PHA)) ? 1'd0 : I_PCint;
 	
 	// Opcode definitions:
 	localparam [7:0] ADC_IMM = 8'h69, SBC_IMM = 8'he9,  
