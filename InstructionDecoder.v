@@ -7,7 +7,7 @@
 					  IR5_C <= 0; Z_ADD <= 0; ADD_ADL <= 0; DL_ADH <= 0; DL_ADL <= 0; Z_ADH <= 0; SB_X <= 0; SB_Y <= 0; \
                       X_SB <= 0; Y_SB <= 0; C_ONE <= 0; nONE_ADD <= 0; AC_DB <= 0; ADL_ADD <= 0; S_cycle <= 0; SB_ADH <= 0; \
 					  C_ZERO <= 0; DB_SB <= 0; ADL_PCL <= 0; ADH_PCH <= 0; PCH_DB <= 0; SB_S <= 0; I_S <= 0; D_S <= 0;	\
-					  S_SB <= 0; S_ADL <= 0; ONE_ADH <= 0;
+					  S_SB <= 0; S_ADL <= 0; ONE_ADH <= 0; DB_P <= 0;
 	
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
@@ -48,7 +48,7 @@ module InstructionDecoder(
 	output wire I_PC, 
 	output reg SB_ADD, nDB_ADD, DB_ADD,	Z_ADD, C_ONE, nONE_ADD, ADL_ADD, C_ZERO,   	// ALU input control
     output reg SUMS,                    		        // ALU operation control
-	output reg AVR_V, ACR_C, DBZ_Z, DB7_N, IR5_C		// Processor status flag control
+	output reg AVR_V, ACR_C, DBZ_Z, DB7_N, IR5_C, DB_P	// Processor status flag control
     );
 	
 	// Declare signals:
@@ -87,7 +87,8 @@ module InstructionDecoder(
 							
 							ACR_C <= 1; DBZ_Z <= 1;	DB7_N <= 1;			// add result flags to status reg
 						end
-						SEC, CLC, TXA, TAX, TYA, TAY, TXS, TSX, PLA,
+						SEC, CLC, TXA, TAX, TYA, TAY, 
+                        TXS, TSX, PLA, PLP,
 						LDA_IMM, LDX_IMM, LDY_IMM, 
                         JMP_ABS, JMP_IND,
                         BPL, BMI, BVC, BVS, BCC, BCS, BNE, BEQ: begin	// next cycle: fetch next byte
@@ -221,7 +222,7 @@ module InstructionDecoder(
                             
                             S_SB <= 1; SB_X <= 1; SB_DB <= 1; DB7_N <= 1; DBZ_Z <= 1;	// transfer S to X, set flags
 						end
-						PLA: begin	// next cycle: put stack pointer out on address bus (ignore results), increment pointer
+						PLA, PLP: begin	// next cycle: put stack pointer out on address bus (ignore results), increment pointer
 							I_cycle <= 1;	// increment cycle counter
 							
 							S_ADL <= 1; ADL_ABL <= 1; ONE_ADH <= 1; ADH_ABH <= 1; I_S <= 1;	// output {0x01, S}, increment pointer
@@ -446,11 +447,11 @@ module InstructionDecoder(
                             ADD_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1; // output {PCL+offset, PCH}
                             
                         end
-						PLA: begin	// next cycle: put real stack pointer out on address bus
+						PLA, PLP: begin	// next cycle: put real stack pointer out on address bus
 							I_cycle <= 1;	// increment cycle counter
 							
-							S_ADL <= 1; ADL_ABL <= 1; ONE_ADH <= 1; ADH_ABH <= 1;	// output {0x01, S+1}, hold pointer
-						end
+							S_ADL <= 1; ADL_ABL <= 1;   // output {0x01, S+1}, hold pointer
+						end                             // NOTE: don't have to output 0x01 to ADH/ABH again, because ABH will hold last value
                     endcase
                 end
                 3: begin
@@ -507,11 +508,19 @@ module InstructionDecoder(
 							R_cycle <= 1; 	// reset cycle counter to zero
 							
 							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
-							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC;
 							
 							DL_DB <= 1; DB_SB <= 1; SB_AC <= 1;			// store value in accumulator
 							DB7_N <= 1; DBZ_Z <= 1;                                 // add result flags to status reg
 						end
+                        PLP: begin  // next cycle: fetch next opcode, store data in status register, set flags
+                            R_cycle <= 1; 	// reset cycle counter to zero
+							
+							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC;
+                            
+                            DL_DB <= 1; DB_P <= 1;  // store value in status register
+                        end
                     endcase
                 end
                 4: begin

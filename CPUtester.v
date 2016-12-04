@@ -74,7 +74,7 @@ module CPUtester;
 			0: Data_bus = LDX_IMM;	
 			1: Data_bus = 8'hfd;
 			2: Data_bus = TXS;
-			3: Data_bus = PLA;
+			3: Data_bus = PLP;
 			4: Data_bus = PLA;
 			5: Data_bus = ADC_IMM;
 			6: Data_bus = 8'h41;
@@ -91,7 +91,7 @@ module CPUtester;
 			16'h01fc: Data_bus = 8'h00;
 			16'h01fd: Data_bus = 8'h01;
 			16'h01fe: Data_bus = 8'hff;
-			16'h01ff: Data_bus = 8'h00;
+			16'h01ff: Data_bus = 8'h02;
 			
 			default: Data_bus = 8'h00;
 		endcase

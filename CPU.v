@@ -31,7 +31,7 @@ module CPU(
 	// Signal declarations:
 	wire I_cycle, R_cycle, DL_DB, AC_SB, ADD_SB, PCL_ADL, PCH_ADH, SB_AC, ADL_ABL, ADH_ABH, I_PC, PCL_PCL, PCH_PCH, SB_ADD, nDB_ADD, DB_ADD, SUMS,
 			ACR_C, AVR_V, SB_DB, DBZ_Z, DB7_N, IR5_C, Z_ADD, ADD_ADL, DL_ADH, DL_ADL, Z_ADH, SB_X, SB_Y, X_SB, Y_SB, C_ONE, nONE_ADD, AC_DB, ADL_ADD,
-            S_cycle, SB_ADH, C_ZERO, DB_SB, ADL_PCL, ADH_PCH, PCH_DB, SB_S, I_S, D_S, S_SB, S_ADL, ONE_ADH;	// control lines
+            S_cycle, SB_ADH, C_ZERO, DB_SB, ADL_PCL, ADH_PCH, PCH_DB, SB_S, I_S, D_S, S_SB, S_ADL, ONE_ADH, DB_P;	// control lines
 	wire [7:0] IR;							// instruction register
 	wire [2:0] cycle;						// cycle counter
 	wire [7:0] PCL, PCH;					// program counter high and low byte registers
@@ -72,14 +72,14 @@ module CPU(
 			ABL <= (ADL_ABL ? ADL : ABL);		// ABL has inputs from ADL only	- holds value otherwise
 			ABH <= (ADH_ABH ? ADH : ABH);		// ABH has inputs from ADH only - holds value otherwise
             
-			P[0] <= (ACR_C ? Creg : (IR5_C ? IR[5] : P[0]));    // Status reg bit 0 - carry flag
-			P[1] <= (DBZ_Z ? (~| DB) : P[1]);	                // Status reg bit 1 - zero flag
-			//P[2]								                // Status reg bit 2 - interrupt disable flag
-			//P[3]								                // Status reg bit 3 - decimal mode flag (setting/clearing does nothing for NES Ricoh CPU)
-			//P[4]								                // Status reg bit 4 - break flag
-			P[5] <= 1'd1;						                // Status reg bit 5 - expansion flag (not used)
-			P[6] <= (AVR_V ? OVFreg : P[6]);	                // Status reg bit 6 - overflow flag
-			P[7] <=	(DB7_N ? DB[7] : P[7]);		                // Status reg bit 7 - negative/sign flag
+			P[0] <= DB_P ? DB[0] : (ACR_C ? Creg : (IR5_C ? IR[5] : P[0]));    // Status reg bit 0 - carry flag
+			P[1] <= DB_P ? DB[1] : (DBZ_Z ? (~| DB) : P[1]);	                // Status reg bit 1 - zero flag
+			P[2] <= DB_P ? DB[2] : P[2];						                // Status reg bit 2 - interrupt disable flag
+			P[3] <= DB_P ? DB[3] : P[3];						                // Status reg bit 3 - decimal mode flag (setting/clearing does nothing for NES Ricoh CPU)
+			P[4] <= DB_P ? DB[4] : P[4];    					                // Status reg bit 4 - break flag
+			P[5] <= DB_P ? DB[5] : P[5];						                // Status reg bit 5 - expansion flag (not used)
+			P[6] <= DB_P ? DB[6] : (AVR_V ? OVFreg : P[6]);	                // Status reg bit 6 - overflow flag
+			P[7] <=	DB_P ? DB[7] : (DB7_N ? DB[7] : P[7]);		                // Status reg bit 7 - negative/sign flag
             
             X <= (SB_X & DB_SB) ? DB : ((SB_X & S_SB) ? S : (SB_X ? SB : X));         // X Index has inputs from SB (or DB when SB/DB are connected) - holds value otherwise
             Y <= (SB_Y & DB_SB) ? DB : (SB_Y ? SB : Y);         // Y Index has inputs from SB (or DB when SB/DB are connected) - holds value otherwise
@@ -116,7 +116,7 @@ module CPU(
 						   .DBZ_Z(DBZ_Z), .SB_DB(SB_DB), .DB7_N(DB7_N), .IR5_C(IR5_C), .Z_ADD(Z_ADD), .ADD_ADL(ADD_ADL), .DL_ADH(DL_ADH), .DL_ADL(DL_ADL), .Z_ADH(Z_ADH),
                            .X_SB(X_SB), .Y_SB(Y_SB), .SB_X(SB_X), .SB_Y(SB_Y), .C_ONE(C_ONE), .nONE_ADD(nONE_ADD), .AC_DB(AC_DB), .S_cycle(S_cycle), .SB_ADH(SB_ADH),
 						   .ADL_ADD(ADL_ADD), .C_ZERO(C_ZERO), .DB_SB(DB_SB), .ADL_PCL(ADL_PCL), .ADH_PCH(ADH_PCH), .PCH_DB(PCH_DB), .SB_S(SB_S), .I_S(I_S), .D_S(D_S),
-						   .S_SB(S_SB), .S_ADL(S_ADL), .ONE_ADH(ONE_ADH));
+						   .S_SB(S_SB), .S_ADL(S_ADL), .ONE_ADH(ONE_ADH), .DB_P(DB_P));
 						   
 	// Program counter sets current... program counter: 					   
 	ProgramCounter pc (.rst(rst), .CLOCK_ph2(clk_ph2), .ADLin(ADL), .ADHin(ADH), .INC_en(I_PC), .PCLin_en(PCL_PCL), .PCHin_en(PCH_PCH),
