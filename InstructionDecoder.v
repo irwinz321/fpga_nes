@@ -7,7 +7,7 @@
 					  IR5_C <= 0; Z_ADD <= 0; ADD_ADL <= 0; DL_ADH <= 0; DL_ADL <= 0; Z_ADH <= 0; SB_X <= 0; SB_Y <= 0; \
                       X_SB <= 0; Y_SB <= 0; C_ONE <= 0; nONE_ADD <= 0; AC_DB <= 0; ADL_ADD <= 0; S_cycle <= 0; SB_ADH <= 0; \
 					  C_ZERO <= 0; DB_SB <= 0; ADL_PCL <= 0; ADH_PCH <= 0; PCH_DB <= 0; SB_S <= 0; I_S <= 0; D_S <= 0;	\
-					  S_SB <= 0; S_ADL <= 0; ONE_ADH <= 0; DB_P <= 0;
+					  S_SB <= 0; S_ADL <= 0; ONE_ADH <= 0; DB_P <= 0; R_nW_int <= 1; P_DB <= 0;
 	
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
@@ -36,7 +36,8 @@ module InstructionDecoder(
     input carry, A_sign,                                // ALU carry bit and A input sign bit (for page crossing)
     input [7:0] P,                                      // processor status register (for branching)
 	output reg I_cycle, R_cycle, S_cycle,		        // increment/reset/skip cycle counter
-	output reg DL_DB, AC_SB, AC_DB, ADD_SB,	PCH_DB,     // bus control
+	output reg R_nW_int,
+	output reg DL_DB, AC_SB, AC_DB, ADD_SB,	PCH_DB, P_DB,    // bus control
     output reg DL_ADH, DL_ADL,
 	output reg PCL_ADL, PCH_ADH, ADD_ADL, Z_ADH,        // bus control
 	output reg ADL_PCL, ADH_PCH,
@@ -88,7 +89,7 @@ module InstructionDecoder(
 							ACR_C <= 1; DBZ_Z <= 1;	DB7_N <= 1;			// add result flags to status reg
 						end
 						SEC, CLC, TXA, TAX, TYA, TAY, 
-                        TXS, TSX, PLA, PLP,
+                        TXS, TSX, PLA, PLP, PHA, PHP,
 						LDA_IMM, LDX_IMM, LDY_IMM, 
                         JMP_ABS, JMP_IND,
                         BPL, BMI, BVC, BVS, BCC, BCS, BNE, BEQ: begin	// next cycle: fetch next byte
@@ -226,6 +227,18 @@ module InstructionDecoder(
 							I_cycle <= 1;	// increment cycle counter
 							
 							S_ADL <= 1; ADL_ABL <= 1; ONE_ADH <= 1; ADH_ABH <= 1; I_S <= 1;	// output {0x01, S}, increment pointer
+						end
+						PHA: begin	// next cycle: put stack pointer out on address bus, Accumulator out on data bus, write
+							I_cycle <= 1;
+							
+							AC_DB <= 1; R_nW_int <= 0;								// write A to
+							S_ADL <= 1; ADL_ABL <= 1; ONE_ADH <= 1; ADH_ABH <= 1; 	// {0x01, S}
+						end
+						PHP: begin	// next cycle: put stack pointer out on address bus, P out on data bus, write
+							I_cycle <= 1;
+							
+							P_DB <= 1; R_nW_int <= 0;								// write P to
+							S_ADL <= 1; ADL_ABL <= 1; ONE_ADH <= 1; ADH_ABH <= 1; 	// {0x01, S}
 						end
                         INY: begin // next cycle: ALU add 1 to Y register, fetch next opcode
                             R_cycle <= 1;													// reset cycle counter to 0
@@ -452,6 +465,14 @@ module InstructionDecoder(
 							
 							S_ADL <= 1; ADL_ABL <= 1;   // output {0x01, S+1}, hold pointer
 						end                             // NOTE: don't have to output 0x01 to ADH/ABH again, because ABH will hold last value
+						PHA, PHP: begin	// next cycle: fetch next opcode, decrement stack pointer
+							R_cycle <= 1; 	// reset cycle counter to 0
+							
+							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
+							
+							D_S <= 1;												// decrement stack pointer
+						end
                     endcase
                 end
                 3: begin

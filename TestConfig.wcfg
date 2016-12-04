@@ -10,20 +10,29 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="13" />
+   <WVObjectSize size="15" />
    <wvobject fp_name="/CPUtester/PC_dbg" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">PC_dbg[15:0]</obj_property>
       <obj_property name="ObjectShortName">PC_dbg[15:0]</obj_property>
       <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/CPUtester/uut/R_nW" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">R_nW</obj_property>
+      <obj_property name="ObjectShortName">R_nW</obj_property>
    </wvobject>
    <wvobject fp_name="/CPUtester/Addr_bus" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">Addr_bus[15:0]</obj_property>
       <obj_property name="ObjectShortName">Addr_bus[15:0]</obj_property>
       <obj_property name="Radix">HEXRADIX</obj_property>
    </wvobject>
-   <wvobject fp_name="/CPUtester/Data_bus" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">Data_bus[7:0]</obj_property>
-      <obj_property name="ObjectShortName">Data_bus[7:0]</obj_property>
+   <wvobject fp_name="/CPUtester/uut/Data_bus_in" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">Data_bus_in[7:0]</obj_property>
+      <obj_property name="ObjectShortName">Data_bus_in[7:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/CPUtester/uut/Data_bus_out" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">Data_bus_out[7:0]</obj_property>
+      <obj_property name="ObjectShortName">Data_bus_out[7:0]</obj_property>
       <obj_property name="Radix">HEXRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/CPUtester/IR_dbg" type="array" db_ref_id="1">

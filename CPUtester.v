@@ -28,10 +28,12 @@ module CPUtester;
 	reg clk_ph1;
 	reg clk_ph2;
 	reg rst;
-	reg [7:0] Data_bus;
+	reg [7:0] Data_bus_in;
 
 	// Outputs
 	wire [15:0] Addr_bus;
+	wire [7:0] Data_bus_out;
+	wire R_nW;
 	wire [7:0] IR_dbg, AC_dbg, X_dbg, Y_dbg, P_dbg, S_dbg;
     wire [15:0] PC_dbg;
     wire [2:0] cycle_dbg;
@@ -41,8 +43,10 @@ module CPUtester;
 		.clk_ph1(clk_ph1), 
 		.clk_ph2(clk_ph2), 
 		.rst(rst), 
-		.Data_bus(Data_bus), 
+		.Data_bus_in(Data_bus_in), 
 		.Addr_bus(Addr_bus), 
+		.Data_bus_out(Data_bus_out),
+		.R_nW(R_nW),
 		.IR_dbg(IR_dbg),
 		.AC_dbg(AC_dbg),
 		.cycle_dbg(cycle_dbg),
@@ -58,7 +62,7 @@ module CPUtester;
 		clk_ph1 = 0;
 		clk_ph2 = 1;
 		rst = 0;
-		Data_bus = 0;
+		Data_bus_in = 0;
 
 		// Wait 100 ns for global reset to finish
 		#600;
@@ -71,29 +75,29 @@ module CPUtester;
 		case (Addr_bus) 
 		
 			// program/data:
-			0: Data_bus = LDX_IMM;	
-			1: Data_bus = 8'hfd;
-			2: Data_bus = TXS;
-			3: Data_bus = PLP;
-			4: Data_bus = PLA;
-			5: Data_bus = ADC_IMM;
-			6: Data_bus = 8'h41;
-			7: Data_bus = 8'h00;
-			8: Data_bus = 8'h00;
+			0: Data_bus_in = LDX_IMM;	
+			1: Data_bus_in = 8'hfd;
+			2: Data_bus_in = TXS;
+			3: Data_bus_in = PHP;
+			4: Data_bus_in = ADC_IMM;
+			5: Data_bus_in = 8'h05;
+			6: Data_bus_in = 8'h00;
+			7: Data_bus_in = 8'h00;
+			8: Data_bus_in = 8'h00;
 			
-			16'h00fd: Data_bus = 8'h00;
-			16'h00fe: Data_bus = 8'h00;
-			16'h00ff: Data_bus = 8'h00;
+			16'h00fd: Data_bus_in = 8'h00;
+			16'h00fe: Data_bus_in = 8'h00;
+			16'h00ff: Data_bus_in = 8'h00;
 			
 			// stack:
-			16'h01fa: Data_bus = 8'h00;
-			16'h01fb: Data_bus = 8'h00;
-			16'h01fc: Data_bus = 8'h00;
-			16'h01fd: Data_bus = 8'h01;
-			16'h01fe: Data_bus = 8'hff;
-			16'h01ff: Data_bus = 8'h02;
+			16'h01fa: Data_bus_in = 8'h00;
+			16'h01fb: Data_bus_in = 8'h00;
+			16'h01fc: Data_bus_in = 8'h00;
+			16'h01fd: Data_bus_in = 8'h01;
+			16'h01fe: Data_bus_in = 8'hff;
+			16'h01ff: Data_bus_in = 8'h02;
 			
-			default: Data_bus = 8'h00;
+			default: Data_bus_in = 8'h00;
 		endcase
 	end
 	
