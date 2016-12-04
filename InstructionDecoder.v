@@ -87,7 +87,7 @@ module InstructionDecoder(
 							
 							ACR_C <= 1; DBZ_Z <= 1;	DB7_N <= 1;			// add result flags to status reg
 						end
-						SEC, CLC, TXA, TAX, TYA, TAY, TXS, TSX,
+						SEC, CLC, TXA, TAX, TYA, TAY, TXS, TSX, PLA,
 						LDA_IMM, LDX_IMM, LDY_IMM, 
                         JMP_ABS, JMP_IND,
                         BPL, BMI, BVC, BVS, BCC, BCS, BNE, BEQ: begin	// next cycle: fetch next byte
