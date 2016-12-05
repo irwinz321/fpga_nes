@@ -33,7 +33,7 @@ module CPU(
 	// Signal declarations:
 	wire I_cycle, R_cycle, DL_DB, AC_SB, ADD_SB, PCL_ADL, PCH_ADH, SB_AC, ADL_ABL, ADH_ABH, I_PC, PCL_PCL, PCH_PCH, SB_ADD, nDB_ADD, DB_ADD, SUMS,
 			ACR_C, AVR_V, SB_DB, DBZ_Z, DB7_N, IR5_C, Z_ADD, ADD_ADL, DL_ADH, DL_ADL, Z_ADH, SB_X, SB_Y, X_SB, Y_SB, C_ONE, nONE_ADD, AC_DB, ADL_ADD,
-            S_cycle, SB_ADH, C_ZERO, DB_SB, ADL_PCL, ADH_PCH, PCH_DB, SB_S, I_S, D_S, S_SB, S_ADL, ONE_ADH, DB_P, R_nW_int, P_DB;	// control lines
+            S_cycle, SB_ADH, C_ZERO, DB_SB, ADL_PCL, ADH_PCH, PCH_DB, SB_S, I_S, D_S, S_SB, S_ADL, ONE_ADH, DB_P, R_nW_int, P_DB, PCL_DB;	// control lines
 	wire [7:0] IR;							// instruction register
 	wire [2:0] cycle;						// cycle counter
 	wire [7:0] PCL, PCH;					// program counter high and low byte registers
@@ -43,11 +43,11 @@ module CPU(
     wire CI;                               // ALU carry in - allows bit to be set to 1 for incrementing
 	reg Creg, OVFreg;						// ALU reslt flags (carry, overflow) - registers to latch wire values until storage
 	reg [7:0] PD, DL, AC, ADD, ABL, ABH,    // top-level registers (pre-decode, data latch, accumulator, adder hold, output address bus low and high)
-              P, X, Y, S, DOR;              // top-level registers (CPU status, X index, Y index, stack pointer, data output)
+              P, X, Y, S, Sin, DOR;         // top-level registers (CPU status, X index, Y index, stack pointer, stack pointer input, data output)
 	
 	// Select inputs to internal busses:
 	assign SB = AC_SB ? AC : (ADD_SB ? ADD : (X_SB ? X : (Y_SB ? Y : 8'd0)));   // Select System Bus input (AC, ADD, X, Y, ...)
-	assign DB = DL_DB ? DL : (AC_DB ? AC : ((SB_DB & S_SB) ? S : (SB_DB ? SB : (PCH_DB ? PCH : (P_DB ? P : 8'd0)))));	            // Select Data Bus input (DL, AC, SB, ...)
+	assign DB = DL_DB ? DL : (AC_DB ? AC : ((SB_DB & S_SB) ? S : (SB_DB ? SB : (PCH_DB ? PCH : (P_DB ? P : (PCL_DB ? PCL : 8'd0))))));  // Select Data Bus input (DL, AC, SB, ...)
 	assign ADL = PCL_ADL ? PCL : (ADD_ADL ? ADD : (DL_ADL ? DL : (S_ADL ? S : 8'd0)));		// Select Address Low Bus input (PCL, ADD, DL, ...)
 	assign ADH = Z_ADH ? 8'd0 : (ONE_ADH ? 8'd1 : (PCH_ADH ? PCH : (DL_ADH ? DL : ((SB_ADH & DB_SB) ? DB : (SB_ADH ? SB : 8'd0)))));	// Select Address High Bus input (ZERO, PCH, DL, SB...)
 	
@@ -66,7 +66,7 @@ module CPU(
 			P <= 8'd0;
             X <= 8'd0;
             Y <= 8'd0;
-            S <= 8'hff;
+            Sin <= 8'hff;
 			DOR <= 8'h0;
 			R_nW <= 1;
 		end
@@ -88,7 +88,7 @@ module CPU(
             X <= (SB_X & DB_SB) ? DB : ((SB_X & S_SB) ? S : (SB_X ? SB : X));         // X Index has inputs from SB (or DB when SB/DB are connected) - holds value otherwise
             Y <= (SB_Y & DB_SB) ? DB : (SB_Y ? SB : Y);         // Y Index has inputs from SB (or DB when SB/DB are connected) - holds value otherwise
             
-            S <= I_S ? S + 8'h01 : (D_S ? S - 8'h01 : (SB_S ? SB : S)); // Stack point can be incremented/decremented, or get input from SB - holds otherwise
+            Sin <= I_S ? S + 8'h01 : (D_S ? S - 8'h01 : (SB_S ? SB : S)); // Stack point can be incremented/decremented, or get input from SB - holds otherwise
 			
 			DOR <= DB;
 			R_nW <= R_nW_int;		// Read/not-write latched from internal control line
@@ -103,6 +103,7 @@ module CPU(
 			ADD <= 0;
 			Creg <= 0;
 			OVFreg <= 0;
+			S <= 8'hff;
 		end
 		else begin
 			PD <= R_nW ? Data_bus_in : Data_bus_out;		// data gets latched to PD automatically
@@ -110,6 +111,7 @@ module CPU(
 			ADD <= ALU_result;	// alu result stored in ADD
 			Creg <= C;			// alu carry flag latched for storage in P next cycle
 			OVFreg <= OVF;		// alu overflow flag latched for storage in P next cycle
+			S <= Sin;			// latch in new stack pointer value
 		end
 	end
 	
@@ -123,7 +125,7 @@ module CPU(
 						   .DBZ_Z(DBZ_Z), .SB_DB(SB_DB), .DB7_N(DB7_N), .IR5_C(IR5_C), .Z_ADD(Z_ADD), .ADD_ADL(ADD_ADL), .DL_ADH(DL_ADH), .DL_ADL(DL_ADL), .Z_ADH(Z_ADH),
                            .X_SB(X_SB), .Y_SB(Y_SB), .SB_X(SB_X), .SB_Y(SB_Y), .C_ONE(C_ONE), .nONE_ADD(nONE_ADD), .AC_DB(AC_DB), .S_cycle(S_cycle), .SB_ADH(SB_ADH),
 						   .ADL_ADD(ADL_ADD), .C_ZERO(C_ZERO), .DB_SB(DB_SB), .ADL_PCL(ADL_PCL), .ADH_PCH(ADH_PCH), .PCH_DB(PCH_DB), .SB_S(SB_S), .I_S(I_S), .D_S(D_S),
-						   .S_SB(S_SB), .S_ADL(S_ADL), .ONE_ADH(ONE_ADH), .DB_P(DB_P), .R_nW_int(R_nW_int), .P_DB(P_DB));
+						   .S_SB(S_SB), .S_ADL(S_ADL), .ONE_ADH(ONE_ADH), .DB_P(DB_P), .R_nW_int(R_nW_int), .P_DB(P_DB), .PCL_DB(PCL_DB));
 						   
 	// Program counter sets current... program counter: 					   
 	ProgramCounter pc (.rst(rst), .CLOCK_ph2(clk_ph2), .ADLin(ADL), .ADHin(ADH), .INC_en(I_PC), .PCLin_en(PCL_PCL), .PCHin_en(PCH_PCH),

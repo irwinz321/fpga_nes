@@ -78,12 +78,15 @@ module CPUtester;
 			0: Data_bus_in = LDX_IMM;	
 			1: Data_bus_in = 8'hfd;
 			2: Data_bus_in = TXS;
-			3: Data_bus_in = PHP;
-			4: Data_bus_in = ADC_IMM;
-			5: Data_bus_in = 8'h05;
+			3: Data_bus_in = PLA;
+			4: Data_bus_in = JSR_ABS;
+			5: Data_bus_in = 8'h09;
 			6: Data_bus_in = 8'h00;
 			7: Data_bus_in = 8'h00;
 			8: Data_bus_in = 8'h00;
+			9: Data_bus_in = ADC_IMM;
+			10: Data_bus_in = 8'h03;
+			11: Data_bus_in = 8'h00;
 			
 			16'h00fd: Data_bus_in = 8'h00;
 			16'h00fe: Data_bus_in = 8'h00;
@@ -135,7 +138,7 @@ module CPUtester;
 					 CMP_INX = 8'hc1,
 					 CMP_INY = 8'hd1,
 					 
-					 JMP_ABS = 8'h4c,
+					 JMP_ABS = 8'h4c, JSR_ABS = 8'h20,
 					 JMP_IND = 8'h6c,
 						
                      BPL = 8'h10, BMI = 8'h30, BVC = 8'h50, BVS = 8'h70, BCC = 8'h90, BCS = 8'hb0, BNE = 8'hd0, BEQ = 8'hf0;
