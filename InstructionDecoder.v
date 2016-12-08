@@ -92,7 +92,7 @@ module InstructionDecoder(
                         TXS, TSX, PLA, PLP, PHA, PHP,
 						LDA_IMM, LDX_IMM, LDY_IMM, 
                         JMP_ABS, JMP_IND,
-						JSR_ABS,
+						JSR_ABS, RTS,
                         BPL, BMI, BVC, BVS, BCC, BCS, BNE, BEQ: begin	// next cycle: fetch next byte
 							I_cycle <= 1;											// increment cycle counter
 					
@@ -248,6 +248,12 @@ module InstructionDecoder(
 							
 							S_ADL <= 1; ADL_ABL <= 1; ONE_ADH <= 1; ADH_ABH <= 1; 	// output {0x01, S}
 						end
+                        RTS: begin  // next cycle: increment stack pointer to grab PCL next time, put out stack pointer to grab junk
+                            I_cycle <= 1;   // increment cycle counter
+                            
+                            S_ADL <= 1; ADL_ABL <= 1; ONE_ADH <= 1; ADH_ABH <= 1; 	// output {0x01, S}
+                            I_S <= 1;   // increment S
+                        end
                         INY: begin // next cycle: ALU add 1 to Y register, fetch next opcode
                             R_cycle <= 1;													// reset cycle counter to 0
 							
@@ -488,6 +494,12 @@ module InstructionDecoder(
 							S_ADL <= 1; ADL_ADD <= 1; nONE_ADD <= 1; C_ONE <= 1; SUMS <= 1;	// decrement S in ALU
 							ADD_SB <= 1; SB_S <= 1;	// store address low-byte in S (so we can store it more than 1 cycle)
 						end
+                        RTS: begin  // next cycle: increment stack pointer to grab PCH next time, put out stack pointer to grab PCL
+                            I_cycle <= 1;   // increment cycle counter
+                            
+                            S_ADL <= 1; ADL_ABL <= 1; ONE_ADH <= 1; ADH_ABH <= 1; 	// output {0x01, S}
+                            I_S <= 1;   // increment S
+                        end
                     endcase
                 end
                 3: begin
@@ -565,6 +577,13 @@ module InstructionDecoder(
 							ADD_ADL <= 1; ADL_ABL <= 1; // output (S-1) to ABL (ABH still 0x01)
 							ADL_ADD <= 1; nONE_ADD <= 1; C_ONE <= 1; SUMS <= 1;	// decrement S again
 						end
+                        RTS: begin  // next cycle: put out stack pointer to grab PCH, store PCL in ALU
+                            I_cycle <= 1;   // increment cycle counter
+                            
+                            S_ADL <= 1; ADL_ABL <= 1; ONE_ADH <= 1; ADH_ABH <= 1; 	// output {0x01, S}
+                            
+                            DL_DB <= 1; DB_ADD <= 1; Z_ADD <= 1; C_ZERO <= 1; SUMS <= 1;    // store PCL in ALU
+                        end
                     endcase
                 end
                 4: begin
@@ -610,6 +629,12 @@ module InstructionDecoder(
 							
 							ADD_SB <= 1; SB_DB <= 1; DB_ADD <= 1; Z_ADD <= 1; C_ZERO <= 1; SUMS <= 1;	// store S+2 in ALU
 						end
+                        RTS: begin  // next cycle: put out PC to grab junk (last address of JSR), increment PC to grab opcode next time
+                            I_cycle <= 1;   // increment cycle counter
+                            
+                            DL_ADH <= 1; ADH_ABH <= 1; ADD_ADL <= 1; ADL_ABL <= 1;  // output {PCH, PCL}
+                            I_PCint <= 1; ADL_PCL <= 1; ADH_PCH <= 1;  // increment PC
+                        end
                     endcase
                 end
                 5: begin
@@ -644,6 +669,12 @@ module InstructionDecoder(
 							
 							ADD_SB <= 1; SB_S <= 1;	// store twice-decremented pointer back in S
 						end
+                        RTS: begin  // next cycle: put out PC to grab junk (last address of JSR), increment PC to grab opcode next time
+                            R_cycle <= 1;   // reset cycle counter
+                            
+                            PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
+                        end
                     endcase
                 end
 				6: begin
@@ -680,7 +711,8 @@ module InstructionDecoder(
 	
 	// PC increment skipped if we're on a single-byte instruction (implied addressing):
 	assign I_PC = (cycle == 1'd1 && (IR == SEC || IR == CLC || IR == INX || IR == INY || IR == DEX || IR == DEY || IR == TAX || IR == TXA ||
-									 IR == TAY || IR == TYA || IR == TXS || IR == TSX || IR == PLA || IR == PLP || IR == PHP || IR == PHA)) ? 1'd0 : I_PCint;
+									 IR == TAY || IR == TYA || IR == TXS || IR == TSX || IR == PLA || IR == PLP || IR == PHP || IR == PHA ||
+                                     IR == RTS)) ? 1'd0 : I_PCint;
 	
 	// Opcode definitions:
 	localparam [7:0] ADC_IMM = 8'h69, SBC_IMM = 8'he9,  
@@ -708,7 +740,7 @@ module InstructionDecoder(
 					 CMP_INX = 8'hc1,
 					 CMP_INY = 8'hd1,
 					 
-					 JMP_ABS = 8'h4c, JSR_ABS = 8'h20,
+					 JMP_ABS = 8'h4c, JSR_ABS = 8'h20, RTS = 8'h60,
 					 JMP_IND = 8'h6c,
 						
                      BPL = 8'h10, BMI = 8'h30, BVC = 8'h50, BVS = 8'h70, BCC = 8'h90, BCS = 8'hb0, BNE = 8'hd0, BEQ = 8'hf0;
