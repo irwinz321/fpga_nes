@@ -10,7 +10,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="15" />
+   <WVObjectSize size="17" />
    <wvobject fp_name="/CPUtester/PC_dbg" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">PC_dbg[15:0]</obj_property>
       <obj_property name="ObjectShortName">PC_dbg[15:0]</obj_property>
@@ -76,5 +76,13 @@
    <wvobject fp_name="/CPUtester/rst" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">rst</obj_property>
       <obj_property name="ObjectShortName">rst</obj_property>
+   </wvobject>
+   <wvobject fp_name="/CPUtester/uut/irq" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">irq</obj_property>
+      <obj_property name="ObjectShortName">irq</obj_property>
+   </wvobject>
+   <wvobject fp_name="/CPUtester/uut/nmi" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">nmi</obj_property>
+      <obj_property name="ObjectShortName">nmi</obj_property>
    </wvobject>
 </wave_config>

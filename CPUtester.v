@@ -27,7 +27,7 @@ module CPUtester;
 	// Inputs
 	reg clk_ph1;
 	reg clk_ph2;
-	reg rst;
+	reg rst, irq, nmi;
 	reg [7:0] Data_bus_in;
 
 	// Outputs
@@ -37,12 +37,17 @@ module CPUtester;
 	wire [7:0] IR_dbg, AC_dbg, X_dbg, Y_dbg, P_dbg, S_dbg;
     wire [15:0] PC_dbg;
     wire [2:0] cycle_dbg;
+	
+	// Useful signals;
+	reg [7:0] cycle_count;
 
 	// Instantiate the Unit Under Test (UUT)
 	CPU uut (
 		.clk_ph1(clk_ph1), 
 		.clk_ph2(clk_ph2), 
-		.rst(rst), 
+		.rst(rst),
+		.irq(irq),
+		.nmi(nmi),
 		.Data_bus_in(Data_bus_in), 
 		.Addr_bus(Addr_bus), 
 		.Data_bus_out(Data_bus_out),
@@ -62,6 +67,9 @@ module CPUtester;
 		clk_ph1 = 0;
 		clk_ph2 = 1;
 		rst = 0;
+		irq = 1;
+		nmi = 1;
+		cycle_count = 0;
 		Data_bus_in = 0;
 
 		// Wait 100 ns for global reset to finish
@@ -79,12 +87,12 @@ module CPUtester;
 			1: Data_bus_in = 8'hfc;
 			2: Data_bus_in = TXS;
 			3: Data_bus_in = PLA;
-			4: Data_bus_in = RTS;
+			4: Data_bus_in = ADC_IMM;
 			5: Data_bus_in = 8'h09;
-			6: Data_bus_in = 8'h00;
-			7: Data_bus_in = 8'h00;
-			8: Data_bus_in = 8'h00;
-			9: Data_bus_in = ADC_IMM;
+			6: Data_bus_in = SBC_IMM;
+			7: Data_bus_in = 8'h02;
+			8: Data_bus_in = ADC_IMM;
+			9: Data_bus_in = 8'h03;
 			10: Data_bus_in = 8'h03;
 			11: Data_bus_in = 8'h00;
 			
@@ -100,8 +108,32 @@ module CPUtester;
 			16'h01fe: Data_bus_in = 8'h08;
 			16'h01ff: Data_bus_in = 8'h00;
 			
+			// interrupt vectors:
+			16'hfffa: Data_bus_in = 8'h00;	// nmi
+			16'hfffb: Data_bus_in = 8'h04;
+			16'hfffe: Data_bus_in = 8'h00;	// irq
+			16'hffff: Data_bus_in = 8'h00;
+			
 			default: Data_bus_in = 8'h00;
 		endcase
+	end
+	
+	// interrupts:
+	always @(posedge clk_ph1) begin
+		
+		cycle_count = cycle_count + 8'd1;
+		
+		// IRQ
+		if (cycle_count >= 5 && cycle_count < 20)
+			irq <= 0;
+		else
+			irq <= 1;
+			
+		// NMI
+		if (cycle_count >= 10 && cycle_count < 20)
+			nmi <= 0;
+		else
+			nmi <= 1;
 	end
 	
 	// clock phase gen:
@@ -123,6 +155,8 @@ module CPUtester;
                      ADC_INY = 8'h71, SBC_INY = 8'hf1,
 					 
 					 SEC = 8'h38, CLC = 8'h18,
+                     
+                     BRK = 8'h00,
 					 
 					 INX = 8'he8, INY = 8'hc8, DEX = 8'hca, DEY = 8'h88, TAX = 8'haa, TXA = 8'h8a, TAY = 8'ha8, TYA = 8'h98,
                      TXS = 8'h9a, TSX = 8'hba, PHA = 8'h48, PLA = 8'h68, PHP = 8'h08, PLP = 8'h28,

@@ -23,12 +23,14 @@ module InstructionController(
     input clk_ph1,			// clock phase 1
     input I_cycle, R_cycle, S_cycle, // increment/reset/skip cycle counter lines
 	input [7:0] PD,			// pre-decode register
+    input int_flag,         // perform interrupt
     output reg [7:0] IR,    // instruction register
-    output reg [2:0] cycle  // current instruction cycle
+    output reg [2:0] cycle,  // current instruction cycle
+    output [2:0] next_cycle // next instruction cycle
     );
     
 // Signal declarations:
-wire [2:0] next_cycle;  // Next cycle count
+//wire [2:0] next_cycle;  // Next cycle count
 wire [7:0] opcode;      // Opcode to put into instruction register
     
 // Decide what the next cycle count should be:
@@ -49,8 +51,10 @@ always @(posedge clk_ph1) begin
 		IR <= 0;				// Reset IR
 	end
 	else begin
-		cycle <= next_cycle;    // Latch cycle
-		IR <= opcode;           // Latch instruction
+    
+		cycle <= next_cycle;    // Latch cycle    
+        IR <= int_flag ? 8'd0 : opcode; // Latch BRK (0) if doing interrupt, else latch current opcode
+        
 	end
 end
     

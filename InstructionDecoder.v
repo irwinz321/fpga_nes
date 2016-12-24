@@ -7,7 +7,8 @@
 					  IR5_C <= 0; Z_ADD <= 0; ADD_ADL <= 0; DL_ADH <= 0; DL_ADL <= 0; Z_ADH <= 0; SB_X <= 0; SB_Y <= 0; \
                       X_SB <= 0; Y_SB <= 0; C_ONE <= 0; nONE_ADD <= 0; AC_DB <= 0; ADL_ADD <= 0; S_cycle <= 0; SB_ADH <= 0; \
 					  C_ZERO <= 0; DB_SB <= 0; ADL_PCL <= 0; ADH_PCH <= 0; PCH_DB <= 0; SB_S <= 0; I_S <= 0; D_S <= 0;	\
-					  S_SB <= 0; S_ADL <= 0; ONE_ADH <= 0; DB_P <= 0; R_nW_int <= 1; P_DB <= 0; PCL_DB <= 0;
+					  S_SB <= 0; S_ADL <= 0; ONE_ADH <= 0; DB_P <= 0; R_nW_int <= 1; P_DB <= 0; PCL_DB <= 0; FF_ADH <= 0; \
+                      FA_ADL <= 0; FE_ADL <= 0; CLR_NMI <= 0; CLR_IRQ <= 0; PL1_ADL <= 0; ONE_I <= 0;
 	
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
@@ -35,6 +36,7 @@ module InstructionDecoder(
 	input [7:0] IR,								        // instruction register
     input carry, A_sign,                                // ALU carry bit and A input sign bit (for page crossing)
     input [7:0] P,                                      // processor status register (for branching)
+    input irq_flag, nmi_flag,                           // interrupt flags
 	output reg I_cycle, R_cycle, S_cycle,		        // increment/reset/skip cycle counter
 	output reg R_nW_int,
 	output reg DL_DB, AC_SB, AC_DB, ADD_SB,	PCH_DB, P_DB, PCL_DB,   // bus control
@@ -49,7 +51,9 @@ module InstructionDecoder(
 	output wire I_PC, 
 	output reg SB_ADD, nDB_ADD, DB_ADD,	Z_ADD, C_ONE, nONE_ADD, ADL_ADD, C_ZERO,   	// ALU input control
     output reg SUMS,                    		        // ALU operation control
-	output reg AVR_V, ACR_C, DBZ_Z, DB7_N, IR5_C, DB_P	// Processor status flag control
+	output reg AVR_V, ACR_C, DBZ_Z, DB7_N, IR5_C, DB_P,	// Processor status flag control
+    output reg FF_ADH, FA_ADL, FE_ADL, PL1_ADL,                 
+    output reg CLR_NMI, CLR_IRQ, ONE_I
     );
 	
 	// Declare signals:
@@ -93,7 +97,8 @@ module InstructionDecoder(
 						LDA_IMM, LDX_IMM, LDY_IMM, 
                         JMP_ABS, JMP_IND,
 						JSR_ABS, RTS,
-                        BPL, BMI, BVC, BVS, BCC, BCS, BNE, BEQ: begin	// next cycle: fetch next byte
+                        BPL, BMI, BVC, BVS, BCC, BCS, BNE, BEQ,
+                        BRK: begin	// next cycle: fetch next byte
 							I_cycle <= 1;											// increment cycle counter
 					
 							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;	// output PC on address bus
@@ -386,6 +391,13 @@ module InstructionDecoder(
                             PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
                             I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
                         end
+                        BRK: begin  // next cycle: store PCH on stack
+                            I_cycle <= 1;   // increment cycle counter
+                            
+                            PCH_DB <= 1; R_nW_int <= 0;								// write PCH to
+							S_ADL <= 1; ADL_ABL <= 1; ONE_ADH <= 1; ADH_ABH <= 1; 	// {0x01, S}
+                            D_S <= 1;                                               // decrement S
+                        end
 					endcase
 				end
                 2: begin
@@ -500,6 +512,13 @@ module InstructionDecoder(
                             S_ADL <= 1; ADL_ABL <= 1; ONE_ADH <= 1; ADH_ABH <= 1; 	// output {0x01, S}
                             I_S <= 1;   // increment S
                         end
+                        BRK: begin  // next cycle: store PCL on stack
+                            I_cycle <= 1;   // increment cycle counter
+                            
+                            PCL_DB <= 1; R_nW_int <= 0;								// write PCL to
+							S_ADL <= 1; ADL_ABL <= 1; ONE_ADH <= 1; ADH_ABH <= 1; 	// {0x01, S}
+                            D_S <= 1;                                               // decrement S
+                        end
                     endcase
                 end
                 3: begin
@@ -584,6 +603,13 @@ module InstructionDecoder(
                             
                             DL_DB <= 1; DB_ADD <= 1; Z_ADD <= 1; C_ZERO <= 1; SUMS <= 1;    // store PCL in ALU
                         end
+                        BRK: begin  // next cycle: store P on stack
+                            I_cycle <= 1;   // increment cycle counter
+                            
+                            P_DB <= 1; R_nW_int <= 0;								// write P to
+							S_ADL <= 1; ADL_ABL <= 1; ONE_ADH <= 1; ADH_ABH <= 1; 	// {0x01, S}
+                            D_S <= 1;                                               // decrement S
+                        end
                     endcase
                 end
                 4: begin
@@ -635,6 +661,20 @@ module InstructionDecoder(
                             DL_ADH <= 1; ADH_ABH <= 1; ADD_ADL <= 1; ADL_ABL <= 1;  // output {PCH, PCL}
                             I_PCint <= 1; ADL_PCL <= 1; ADH_PCH <= 1;  // increment PC
                         end
+                        BRK: begin  // next cycle: fetch PCL from appropriate interrupt vector, clear interrupts
+                            I_cycle <= 1;   // increment cycle counter
+                            
+                            FF_ADH <= 1; ADH_ABH <= 1;  // high byte of 1st interrupt vector always 0xFF
+                            if (nmi_flag) begin
+                                FA_ADL <= 1;            // if NMI, low byte is 0xFA
+                                CLR_NMI <= 1; CLR_IRQ <= 1;   // clear NMI and IRQ flags
+                            end
+                            else begin
+                                FE_ADL <= 1;            // else, low byte is 0xFE
+                                CLR_IRQ <= 1;           // clear IRQ flag --> should this be different for a software BRK??
+                            end
+                            ADL_ABL <= 1;
+                        end
                     endcase
                 end
                 5: begin
@@ -675,11 +715,20 @@ module InstructionDecoder(
                             PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
 							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
                         end
-                    endcase
+                        BRK: begin  // next cycle: fetch PCH, store PCL, disable interrupts
+                            I_cycle <= 1;   // increment cycle counter
+                            
+                            PL1_ADL <= 1; ADL_ABL <= 1; // add one to previous vector to fetch PCH
+                            
+                            DL_DB <= 1; DB_ADD <= 1; C_ZERO <= 1; Z_ADD <= 1; SUMS <= 1;    // store PCL in ALU
+                            
+                            ONE_I <= 1; // set interrupt disable in P
+                        end
+                    endcase  
                 end
 				6: begin
 					case (IR)
-						ADC_INY: begin	// perform add, fetch next opcode
+						ADC_INY: begin	// next cycle: perform add, fetch next opcode
 							R_cycle <= 1;													// reset cycle counter to 0
 							
 							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
@@ -687,7 +736,7 @@ module InstructionDecoder(
 							
 							DL_DB <= 1; DB_ADD <= 1; AC_SB <= 1; SB_ADD <= 1; SUMS <= 1;	// perform ALU add on AC, DL
 						end
-						SBC_INY: begin	// perform subtraction, fetch next opcode
+						SBC_INY: begin	// next cycle: perform subtraction, fetch next opcode
 							R_cycle <= 1;													// reset cycle counter to 0
 							
 							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
@@ -695,6 +744,12 @@ module InstructionDecoder(
 							
 							DL_DB <= 1; nDB_ADD <= 1; AC_SB <= 1; SB_ADD <= 1; SUMS <= 1;	// perform ALU subtraction on AC, DL
 						end
+                        BRK: begin  // next cycle: fetch 1st opcode of interrupt routine, store new PC
+                            R_cycle <= 1;   // reset cycle counter to 0
+                            
+                            ADD_ADL <= 1; ADL_ABL <= 1; DL_ADH <= 1; ADH_ABH <= 1;      // output new PC
+                            I_PCint <= 1; ADL_PCL <= 1; ADH_PCH <= 1;      // increment new PC
+                        end
 					endcase
 				end
 				default: begin  // next cycle: fetch first opcode, reset cycle (should only happen on reset)
@@ -709,10 +764,11 @@ module InstructionDecoder(
 	
 	end
 	
-	// PC increment skipped if we're on a single-byte instruction (implied addressing):
-	assign I_PC = (cycle == 1'd1 && (IR == SEC || IR == CLC || IR == INX || IR == INY || IR == DEX || IR == DEY || IR == TAX || IR == TXA ||
+	// PC increment skipped if we're on a single-byte instruction or on first two cycles of an interrupt:
+	assign I_PC = ((cycle == 1'd1 && (IR == SEC || IR == CLC || IR == INX || IR == INY || IR == DEX || IR == DEY || IR == TAX || IR == TXA ||
 									 IR == TAY || IR == TYA || IR == TXS || IR == TSX || IR == PLA || IR == PLP || IR == PHP || IR == PHA ||
-                                     IR == RTS)) ? 1'd0 : I_PCint;
+                                     IR == RTS || IR == BRK)) ||
+                   (R_cycle && (irq_flag || nmi_flag) && IR != BRK)) ? 1'd0 : I_PCint;
 	
 	// Opcode definitions:
 	localparam [7:0] ADC_IMM = 8'h69, SBC_IMM = 8'he9,  
@@ -725,6 +781,8 @@ module InstructionDecoder(
                      ADC_INY = 8'h71, SBC_INY = 8'hf1,
 					 
 					 SEC = 8'h38, CLC = 8'h18,
+                     
+                     BRK = 8'h00,
 					 
 					 INX = 8'he8, INY = 8'hc8, DEX = 8'hca, DEY = 8'h88, TAX = 8'haa, TXA = 8'h8a, TAY = 8'ha8, TYA = 8'h98,
                      TXS = 8'h9a, TSX = 8'hba, PHA = 8'h48, PLA = 8'h68, PHP = 8'h08, PLP = 8'h28,
