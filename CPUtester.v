@@ -109,8 +109,8 @@ module CPUtester;
 			16'h01ff: Data_bus_in = 8'h00;
 			
 			// interrupt vectors:
-			16'hfffa: Data_bus_in = 8'h00;	// nmi
-			16'hfffb: Data_bus_in = 8'h04;
+			16'hfffa: Data_bus_in = 8'h04;	// nmi
+			16'hfffb: Data_bus_in = 8'h00;
 			16'hfffe: Data_bus_in = 8'h00;	// irq
 			16'hffff: Data_bus_in = 8'h00;
 			
@@ -130,7 +130,7 @@ module CPUtester;
 			irq <= 1;
 			
 		// NMI
-		if (cycle_count >= 10 && cycle_count < 20)
+		if (cycle_count >= 12 && cycle_count < 20)
 			nmi <= 0;
 		else
 			nmi <= 1;

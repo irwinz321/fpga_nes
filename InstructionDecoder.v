@@ -8,7 +8,7 @@
                       X_SB <= 0; Y_SB <= 0; C_ONE <= 0; nONE_ADD <= 0; AC_DB <= 0; ADL_ADD <= 0; S_cycle <= 0; SB_ADH <= 0; \
 					  C_ZERO <= 0; DB_SB <= 0; ADL_PCL <= 0; ADH_PCH <= 0; PCH_DB <= 0; SB_S <= 0; I_S <= 0; D_S <= 0;	\
 					  S_SB <= 0; S_ADL <= 0; ONE_ADH <= 0; DB_P <= 0; R_nW_int <= 1; P_DB <= 0; PCL_DB <= 0; FF_ADH <= 0; \
-                      FA_ADL <= 0; FE_ADL <= 0; CLR_NMI <= 0; CLR_IRQ <= 0; PL1_ADL <= 0; ONE_I <= 0;
+                      FA_ADL <= 0; FE_ADL <= 0; CLR_INT <= 0; PL1_ADL <= 0; ONE_I <= 0; CLR_NMI <= 0;
 	
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
@@ -36,7 +36,7 @@ module InstructionDecoder(
 	input [7:0] IR,								        // instruction register
     input carry, A_sign,                                // ALU carry bit and A input sign bit (for page crossing)
     input [7:0] P,                                      // processor status register (for branching)
-    input irq_flag, nmi_flag,                           // interrupt flags
+    input irq_flag, nmi_flag, int_flag,                 // interrupt flags
 	output reg I_cycle, R_cycle, S_cycle,		        // increment/reset/skip cycle counter
 	output reg R_nW_int,
 	output reg DL_DB, AC_SB, AC_DB, ADD_SB,	PCH_DB, P_DB, PCL_DB,   // bus control
@@ -53,7 +53,7 @@ module InstructionDecoder(
     output reg SUMS,                    		        // ALU operation control
 	output reg AVR_V, ACR_C, DBZ_Z, DB7_N, IR5_C, DB_P,	// Processor status flag control
     output reg FF_ADH, FA_ADL, FE_ADL, PL1_ADL,                 
-    output reg CLR_NMI, CLR_IRQ, ONE_I
+    output reg CLR_INT, CLR_NMI, ONE_I
     );
 	
 	// Declare signals:
@@ -667,13 +667,15 @@ module InstructionDecoder(
                             FF_ADH <= 1; ADH_ABH <= 1;  // high byte of 1st interrupt vector always 0xFF
                             if (nmi_flag) begin
                                 FA_ADL <= 1;            // if NMI, low byte is 0xFA
-                                CLR_NMI <= 1; CLR_IRQ <= 1;   // clear NMI and IRQ flags
+                                CLR_NMI <= 1; //CLR_IRQ <= 1;   // clear NMI and IRQ flags
                             end
                             else begin
                                 FE_ADL <= 1;            // else, low byte is 0xFE
-                                CLR_IRQ <= 1;           // clear IRQ flag --> should this be different for a software BRK??
+                                //CLR_IRQ <= 1;           // clear IRQ flag --> should this be different for a software BRK??
                             end
                             ADL_ABL <= 1;
+							
+							CLR_INT <= 1;	// clear do-interrupt flag
                         end
                     endcase
                 end
@@ -768,7 +770,7 @@ module InstructionDecoder(
 	assign I_PC = ((cycle == 1'd1 && (IR == SEC || IR == CLC || IR == INX || IR == INY || IR == DEX || IR == DEY || IR == TAX || IR == TXA ||
 									 IR == TAY || IR == TYA || IR == TXS || IR == TSX || IR == PLA || IR == PLP || IR == PHP || IR == PHA ||
                                      IR == RTS || IR == BRK)) ||
-                   (R_cycle && (irq_flag || nmi_flag) && IR != BRK)) ? 1'd0 : I_PCint;
+                   (R_cycle && int_flag && IR != BRK)) ? 1'd0 : I_PCint;
 	
 	// Opcode definitions:
 	localparam [7:0] ADC_IMM = 8'h69, SBC_IMM = 8'he9,  

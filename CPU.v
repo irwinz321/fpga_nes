@@ -34,7 +34,7 @@ module CPU(
 	wire I_cycle, R_cycle, DL_DB, AC_SB, ADD_SB, PCL_ADL, PCH_ADH, SB_AC, ADL_ABL, ADH_ABH, I_PC, PCL_PCL, PCH_PCH, SB_ADD, nDB_ADD, DB_ADD, SUMS,
 			ACR_C, AVR_V, SB_DB, DBZ_Z, DB7_N, IR5_C, Z_ADD, ADD_ADL, DL_ADH, DL_ADL, Z_ADH, SB_X, SB_Y, X_SB, Y_SB, C_ONE, nONE_ADD, AC_DB, ADL_ADD,
             S_cycle, SB_ADH, C_ZERO, DB_SB, ADL_PCL, ADH_PCH, PCH_DB, SB_S, I_S, D_S, S_SB, S_ADL, ONE_ADH, DB_P, R_nW_int, P_DB, PCL_DB, FF_ADH, 
-            FA_ADL, FE_ADL, PL1_ADL, CLR_NMI, CLR_IRQ, ONE_I;	// control lines
+            FA_ADL, FE_ADL, PL1_ADL, CLR_INT, ONE_I, CLR_NMI;	// control lines
 	wire [7:0] IR;							// instruction register
 	wire [2:0] cycle, next_cycle;			// cycle counter and next_cycle indicator
 	wire [7:0] PCL, PCH;					// program counter high and low byte registers
@@ -45,7 +45,7 @@ module CPU(
 	reg Creg, OVFreg;						// ALU reslt flags (carry, overflow) - registers to latch wire values until storage
 	reg [7:0] PD, DL, AC, ADD, ABL, ABH,    // top-level registers (pre-decode, data latch, accumulator, adder hold, output address bus low and high)
               P, X, Y, S, Sin, DOR;         // top-level registers (CPU status, X index, Y index, stack pointer, stack pointer input, data output)
-    wire IRQ_flag, NMI_flag;                // flags to indicate interrupts should be handled
+    wire IRQ_flag, NMI_flag, INT_flag;      // flags to indicate interrupts should be handled
 	
 	// Select inputs to internal busses:
 	assign SB = AC_SB ? AC : (ADD_SB ? ADD : (X_SB ? X : (Y_SB ? Y : 8'd0)));   // Select System Bus input (AC, ADD, X, Y, ...)
@@ -120,18 +120,18 @@ module CPU(
 	
 	// Instruction controller sets IR and Cycle Counter:
 	InstructionController ic (.rst(rst), .clk_ph1(clk_ph1), .I_cycle(I_cycle), .R_cycle(R_cycle), .S_cycle(S_cycle), .PD(PD), .IR(IR), .cycle(cycle),
-                              .next_cycle(next_cycle), .int_flag(IRQ_flag || NMI_flag));
+                              .next_cycle(next_cycle), .int_flag(INT_flag));
 	
 	// Instruction decoder uses IR and Cycle counter to determine which control lines active on NEXT cycle:
 	InstructionDecoder id (.clk_ph2(clk_ph2), .rst(rst), .cycle(cycle), .IR(IR), .I_cycle(I_cycle), .R_cycle(R_cycle), .carry(C), .A_sign(AI[7]), .P(P),
-                           .irq_flag(IRQ_flag), .nmi_flag(NMI_flag),
+                           .irq_flag(IRQ_flag), .nmi_flag(NMI_flag), .int_flag(INT_flag),
 						   .DL_DB(DL_DB), .AC_SB(AC_SB), .ADD_SB(ADD_SB), .PCL_ADL(PCL_ADL), .PCH_ADH(PCH_ADH), .SB_AC(SB_AC), .ADL_ABL(ADL_ABL), .ADH_ABH(ADH_ABH), 
 						   .I_PC(I_PC), .PCL_PCL(PCL_PCL), .PCH_PCH(PCH_PCH), .SB_ADD(SB_ADD), .nDB_ADD(nDB_ADD), .DB_ADD(DB_ADD), .SUMS(SUMS), .AVR_V(AVR_V), .ACR_C(ACR_C),
 						   .DBZ_Z(DBZ_Z), .SB_DB(SB_DB), .DB7_N(DB7_N), .IR5_C(IR5_C), .Z_ADD(Z_ADD), .ADD_ADL(ADD_ADL), .DL_ADH(DL_ADH), .DL_ADL(DL_ADL), .Z_ADH(Z_ADH),
                            .X_SB(X_SB), .Y_SB(Y_SB), .SB_X(SB_X), .SB_Y(SB_Y), .C_ONE(C_ONE), .nONE_ADD(nONE_ADD), .AC_DB(AC_DB), .S_cycle(S_cycle), .SB_ADH(SB_ADH),
 						   .ADL_ADD(ADL_ADD), .C_ZERO(C_ZERO), .DB_SB(DB_SB), .ADL_PCL(ADL_PCL), .ADH_PCH(ADH_PCH), .PCH_DB(PCH_DB), .SB_S(SB_S), .I_S(I_S), .D_S(D_S),
 						   .S_SB(S_SB), .S_ADL(S_ADL), .ONE_ADH(ONE_ADH), .DB_P(DB_P), .R_nW_int(R_nW_int), .P_DB(P_DB), .PCL_DB(PCL_DB), .FF_ADH(FF_ADH), 
-                           .FA_ADL(FA_ADL), .FE_ADL(FE_ADL), .PL1_ADL(PL1_ADL), .CLR_NMI(CLR_NMI), .CLR_IRQ(CLR_IRQ), .ONE_I(ONE_I));
+                           .FA_ADL(FA_ADL), .FE_ADL(FE_ADL), .PL1_ADL(PL1_ADL), .CLR_INT(CLR_INT), .ONE_I(ONE_I), .CLR_NMI(CLR_NMI));
 						   
 	// Program counter sets current... program counter: 					   
 	ProgramCounter pc (.rst(rst), .CLOCK_ph2(clk_ph2), .ADLin(ADL), .ADHin(ADH), .INC_en(I_PC), .PCLin_en(PCL_PCL), .PCHin_en(PCH_PCH),
@@ -142,8 +142,8 @@ module CPU(
 			 .Ain(AI), .Bin(BI), .Cin(CI), .RES(ALU_result), .Cout(C), .OVFout(OVF));
              
     // Interrupt controller detects interrupt and reset requests:
-    InterruptController intc (.clk_ph1(clk_ph1), .clk_ph2(clk_ph2), .rst(rst), .irq(irq), .nmi(nmi), .nmi_clr(CLR_NMI), .irq_clr(CLR_IRQ), .irq_mask(P[2]),
-                              .cycle(cycle), .next_cycle(next_cycle), .IR(IR), .irq_out(IRQ_flag), .nmi_out(NMI_flag));
+    InterruptController intc (.clk_ph1(clk_ph1), .clk_ph2(clk_ph2), .rst(rst), .irq(irq), .nmi(nmi), .int_clr(CLR_INT), .nmi_clr(CLR_NMI), .irq_mask(P[2]),
+                              .cycle(cycle), .next_cycle(next_cycle), .IR(IR), .irq_out(IRQ_flag), .nmi_out(NMI_flag), .int_out(INT_flag));
 
 		
 	// Set CPU outputs:
