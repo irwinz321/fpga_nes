@@ -40,7 +40,7 @@ assign next_cycle = (R_cycle == 1) ? 3'd0                                       
                                                                      : cycle;         // else, don't change count
     
 // Decide what gets loaded into the instruction register (change only on T1 cycle):
-assign opcode = (next_cycle == 1) ? PD      // on next T1, load new opcode
+assign opcode = (next_cycle == 1) ? (int_flag ? 8'd0 : PD)      // on next T1, load new opcode or BRK (0) if doing an interrupt
                                   : IR;     // if not T1 cycle, keep last opcode
     
 // Latch new values on ph1:
@@ -53,7 +53,7 @@ always @(posedge clk_ph1) begin
 	else begin
     
 		cycle <= next_cycle;    // Latch cycle    
-        IR <= int_flag ? 8'd0 : opcode; // Latch BRK (0) if doing interrupt, else latch current opcode
+        IR <= opcode; // Latch current opcode
         
 	end
 end

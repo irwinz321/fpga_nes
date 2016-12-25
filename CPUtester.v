@@ -84,21 +84,27 @@ module CPUtester;
 		
 			// program/data:
 			0: Data_bus_in = LDX_IMM;	
-			1: Data_bus_in = 8'hfc;
+			1: Data_bus_in = 8'hfe;
 			2: Data_bus_in = TXS;
-			3: Data_bus_in = PLA;
-			4: Data_bus_in = ADC_IMM;
-			5: Data_bus_in = 8'h09;
-			6: Data_bus_in = SBC_IMM;
-			7: Data_bus_in = 8'h02;
-			8: Data_bus_in = ADC_IMM;
-			9: Data_bus_in = 8'h03;
-			10: Data_bus_in = 8'h03;
+			3: Data_bus_in = PLP;
+			4: Data_bus_in = LDA_IMM;
+			5: Data_bus_in = 8'h01;
+			6: Data_bus_in = BEQ;		// not taken
+			7: Data_bus_in = 8'h00;
+			8: Data_bus_in = BNE;		// taken, no page crossing
+			9: Data_bus_in = 8'h02;
+			10: Data_bus_in = 8'h00;
 			11: Data_bus_in = 8'h00;
+			12: Data_bus_in = JMP_ABS;		
+			13: Data_bus_in = 8'hf0;
+			14: Data_bus_in = 8'h00;
 			
-			16'h00fd: Data_bus_in = 8'h00;
-			16'h00fe: Data_bus_in = 8'h00;
-			16'h00ff: Data_bus_in = 8'h00;
+			16'h00f0: Data_bus_in = BNE;	// taken, page crossing
+			16'h00f1: Data_bus_in = 8'h10;
+			16'h00f2: Data_bus_in = 8'h00;
+			
+			16'h0102: Data_bus_in = ADC_IMM;
+			16'h0103: Data_bus_in = 8'h01;
 			
 			// stack:
 			16'h01fa: Data_bus_in = 8'h00;
@@ -106,7 +112,7 @@ module CPUtester;
 			16'h01fc: Data_bus_in = 8'h00;
 			16'h01fd: Data_bus_in = 8'h01;
 			16'h01fe: Data_bus_in = 8'h08;
-			16'h01ff: Data_bus_in = 8'h00;
+			16'h01ff: Data_bus_in = 8'h30;
 			
 			// interrupt vectors:
 			16'hfffa: Data_bus_in = 8'h04;	// nmi
@@ -124,16 +130,16 @@ module CPUtester;
 		cycle_count = cycle_count + 8'd1;
 		
 		// IRQ
-		if (cycle_count >= 5 && cycle_count < 20)
+		if (cycle_count >= 8 && cycle_count < 20)
 			irq <= 0;
 		else
 			irq <= 1;
 			
 		// NMI
-		if (cycle_count >= 12 && cycle_count < 20)
+		/*if (cycle_count >= 12 && cycle_count < 20)
 			nmi <= 0;
 		else
-			nmi <= 1;
+			nmi <= 1;*/
 	end
 	
 	// clock phase gen:

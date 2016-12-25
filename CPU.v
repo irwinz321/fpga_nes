@@ -65,7 +65,7 @@ module CPU(
 			AC <= 8'd0;
 			ABL <= 8'd0;
 			ABH <= 8'd0;
-			P <= 8'h30;     // bits 4 and 5 set by default
+			P <= 8'h34;     // bits 2,4 and 5 set by default
             X <= 8'd0;
             Y <= 8'd0;
             Sin <= 8'hff;
