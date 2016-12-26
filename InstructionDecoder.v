@@ -98,7 +98,7 @@ module InstructionDecoder(
                         JMP_ABS, JMP_IND,
 						JSR_ABS, RTS,
                         BPL, BMI, BVC, BVS, BCC, BCS, BNE, BEQ,
-                        BRK: begin	// next cycle: fetch next byte
+                        BRK, RTI: begin	// next cycle: fetch next byte
 							I_cycle <= 1;											// increment cycle counter
 					
 							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;	// output PC on address bus
@@ -253,7 +253,7 @@ module InstructionDecoder(
 							
 							S_ADL <= 1; ADL_ABL <= 1; ONE_ADH <= 1; ADH_ABH <= 1; 	// output {0x01, S}
 						end
-                        RTS: begin  // next cycle: increment stack pointer to grab PCL next time, put out stack pointer to grab junk
+                        RTS, RTI: begin  // next cycle: increment stack pointer to grab PCL next time, put out stack pointer to grab junk
                             I_cycle <= 1;   // increment cycle counter
                             
                             S_ADL <= 1; ADL_ABL <= 1; ONE_ADH <= 1; ADH_ABH <= 1; 	// output {0x01, S}
@@ -506,7 +506,7 @@ module InstructionDecoder(
 							S_ADL <= 1; ADL_ADD <= 1; nONE_ADD <= 1; C_ONE <= 1; SUMS <= 1;	// decrement S in ALU
 							ADD_SB <= 1; SB_S <= 1;	// store address low-byte in S (so we can store it more than 1 cycle)
 						end
-                        RTS: begin  // next cycle: increment stack pointer to grab PCH next time, put out stack pointer to grab PCL
+                        RTS, RTI: begin  // next cycle: increment stack pointer, put out stack pointer to grab PCL (RTS) or P (RTI)
                             I_cycle <= 1;   // increment cycle counter
                             
                             S_ADL <= 1; ADL_ABL <= 1; ONE_ADH <= 1; ADH_ABH <= 1; 	// output {0x01, S}
@@ -610,6 +610,14 @@ module InstructionDecoder(
 							S_ADL <= 1; ADL_ABL <= 1; ONE_ADH <= 1; ADH_ABH <= 1; 	// {0x01, S}
                             D_S <= 1;                                               // decrement S
                         end
+						RTI: begin	// next cycle: store P, fetch PCL from stack
+							I_cycle <= 1;   // increment cycle counter
+                            
+                            S_ADL <= 1; ADL_ABL <= 1; ONE_ADH <= 1; ADH_ABH <= 1; 	// output {0x01, S}
+                            I_S <= 1;   // increment S
+													
+							DL_DB <= 1; DB_P <= 1;  // store value in status register
+						end
                     endcase
                 end
                 4: begin
@@ -677,6 +685,13 @@ module InstructionDecoder(
 							
 							CLR_INT <= 1;	// clear do-interrupt flag
                         end
+						RTI: begin	// next cycle: store PCL, fetch PCH from stack
+							I_cycle <= 1;   // increment cycle counter
+                            
+                            S_ADL <= 1; ADL_ABL <= 1; ONE_ADH <= 1; ADH_ABH <= 1; 	// output {0x01, S}
+													
+							DL_DB <= 1; DB_ADD <= 1; Z_ADD <= 1; C_ZERO <= 1; SUMS <= 1;    // store PCL in ALU
+						end
                     endcase
                 end
                 5: begin
@@ -726,6 +741,12 @@ module InstructionDecoder(
                             
                             ONE_I <= 1; // set interrupt disable in P
                         end
+						RTI: begin  // next cycle: put out PC to grab next opcode
+                            R_cycle <= 1;   // increment cycle counter
+                            
+                            DL_ADH <= 1; ADH_ABH <= 1; ADD_ADL <= 1; ADL_ABL <= 1;  // output {PCH, PCL}
+                            I_PCint <= 1; ADL_PCL <= 1; ADH_PCH <= 1;  // increment PC
+                        end
                     endcase  
                 end
 				6: begin
@@ -769,7 +790,7 @@ module InstructionDecoder(
 	// PC increment skipped if we're on a single-byte instruction or on first two cycles of an interrupt:
 	assign I_PC = ((cycle == 1'd1 && (IR == SEC || IR == CLC || IR == INX || IR == INY || IR == DEX || IR == DEY || IR == TAX || IR == TXA ||
 									 IR == TAY || IR == TYA || IR == TXS || IR == TSX || IR == PLA || IR == PLP || IR == PHP || IR == PHA ||
-                                     IR == RTS || IR == BRK)) ||
+                                     IR == RTS || IR == BRK || IR == RTI)) ||
                    (R_cycle && int_flag && IR != BRK)) ? 1'd0 : I_PCint;
 	
 	// Opcode definitions:
@@ -784,7 +805,7 @@ module InstructionDecoder(
 					 
 					 SEC = 8'h38, CLC = 8'h18,
                      
-                     BRK = 8'h00,
+                     BRK = 8'h00, RTI = 8'h40,
 					 
 					 INX = 8'he8, INY = 8'hc8, DEX = 8'hca, DEY = 8'h88, TAX = 8'haa, TXA = 8'h8a, TAY = 8'ha8, TYA = 8'h98,
                      TXS = 8'h9a, TSX = 8'hba, PHA = 8'h48, PLA = 8'h68, PHP = 8'h08, PLP = 8'h28,

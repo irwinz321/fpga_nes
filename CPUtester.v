@@ -106,19 +106,26 @@ module CPUtester;
 			16'h0102: Data_bus_in = ADC_IMM;
 			16'h0103: Data_bus_in = 8'h01;
 			
+			// ISR:
+			16'h2000: Data_bus_in = ADC_IMM;
+			16'h2001: Data_bus_in = 8'h01;
+			16'h2002: Data_bus_in = ADC_IMM;
+			16'h2003: Data_bus_in = 8'h02;
+			16'h2004: Data_bus_in = RTI;
+			
 			// stack:
 			16'h01fa: Data_bus_in = 8'h00;
 			16'h01fb: Data_bus_in = 8'h00;
 			16'h01fc: Data_bus_in = 8'h00;
-			16'h01fd: Data_bus_in = 8'h01;
-			16'h01fe: Data_bus_in = 8'h08;
-			16'h01ff: Data_bus_in = 8'h30;
+			16'h01fd: Data_bus_in = 8'h20;
+			16'h01fe: Data_bus_in = 8'h04;
+			16'h01ff: Data_bus_in = 8'h00;
 			
 			// interrupt vectors:
-			16'hfffa: Data_bus_in = 8'h04;	// nmi
-			16'hfffb: Data_bus_in = 8'h00;
+			16'hfffa: Data_bus_in = 8'h00;	// nmi
+			16'hfffb: Data_bus_in = 8'h20;
 			16'hfffe: Data_bus_in = 8'h00;	// irq
-			16'hffff: Data_bus_in = 8'h00;
+			16'hffff: Data_bus_in = 8'h20;
 			
 			default: Data_bus_in = 8'h00;
 		endcase
@@ -130,16 +137,16 @@ module CPUtester;
 		cycle_count = cycle_count + 8'd1;
 		
 		// IRQ
-		if (cycle_count >= 8 && cycle_count < 20)
-			irq <= 0;
-		else
-			irq <= 1;
+		//if (cycle_count >= 5 && cycle_count < 20)
+		//	irq <= 0;
+		//else
+		//	irq <= 1;
 			
 		// NMI
-		/*if (cycle_count >= 12 && cycle_count < 20)
+		if (cycle_count >= 5 && cycle_count < 20)
 			nmi <= 0;
 		else
-			nmi <= 1;*/
+			nmi <= 1;
 	end
 	
 	// clock phase gen:
@@ -162,7 +169,7 @@ module CPUtester;
 					 
 					 SEC = 8'h38, CLC = 8'h18,
                      
-                     BRK = 8'h00,
+                     BRK = 8'h00, RTI = 8'h40,
 					 
 					 INX = 8'he8, INY = 8'hc8, DEX = 8'hca, DEY = 8'h88, TAX = 8'haa, TXA = 8'h8a, TAY = 8'ha8, TYA = 8'h98,
                      TXS = 8'h9a, TSX = 8'hba, PHA = 8'h48, PLA = 8'h68, PHP = 8'h08, PLP = 8'h28,
