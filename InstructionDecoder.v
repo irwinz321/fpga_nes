@@ -108,6 +108,7 @@ module InstructionDecoder(
 						SEC, CLC, TXA, TAX, TYA, TAY, 
                         TXS, TSX, PLA, PLP, PHA, PHP,
 						LDA_IMM, LDA_ABS, LDA_ZPG, LDA_ZPX, LDA_ABX, LDA_ABY, LDA_INX, LDA_INY,
+                        STA_ABS, STA_ZPG, STA_ZPX, STA_ABX, STA_ABY, STA_INX, STA_INY,
 						LDX_IMM, LDY_IMM, 
                         JMP_ABS, JMP_IND,
 						JSR_ABS, RTS,
@@ -329,7 +330,8 @@ module InstructionDecoder(
                             
                             SB_Y <= 1; AC_DB <= 1; AC_SB <= 1; DB7_N <= 1; DBZ_Z <= 1;
                         end
-                        ADC_ABS, SBC_ABS, AND_ABS, ORA_ABS, EOR_ABS, LDA_ABS: begin  // next cycle: store address low-byte in ALU, fetch address high-byte
+                        ADC_ABS, SBC_ABS, AND_ABS, ORA_ABS, EOR_ABS, LDA_ABS,
+                        STA_ABS: begin  // next cycle: store address low-byte in ALU, fetch address high-byte
                             I_cycle <= 1;   // increment cycle counter
                             
                             PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
@@ -342,15 +344,24 @@ module InstructionDecoder(
                             
                             DL_ADL <= 1; Z_ADH <= 1; ADL_ABL <= 1; ADH_ABH <= 1;    // output low-byte (DL) and zeros to address bus
                         end
+						STA_ZPG: begin	// next cycle: output zero page address, write accumulator data
+							I_cycle <= 1; 	// increment cycle counter
+							
+							DL_ADL <= 1; Z_ADH <= 1; ADL_ABL <= 1; ADH_ABH <= 1;    // output low-byte (DL) and zeros to address bus
+							
+							AC_DB <= 1; R_nW_int <= 0;	// write accumulator data to memory
+						end
                         ADC_ZPX, ADC_INX, SBC_ZPX, SBC_INX, AND_ZPX, AND_INX, 
-                        ORA_ZPX, ORA_INX, EOR_ZPX, EOR_INX, LDA_ZPX, LDA_INX: begin  // next cycle: add base address (DL) to X register
+                        ORA_ZPX, ORA_INX, EOR_ZPX, EOR_INX, LDA_ZPX, LDA_INX,
+						STA_ZPX, STA_INX: begin  // next cycle: add base address (DL) to X register
                             I_cycle <= 1;   // increment cycle counter
                             
                             DL_ADL <= 1; Z_ADH <= 1; ADL_ABL <= 1; ADH_ABH <= 1;    // output base address low-byte (DL) and zeros to address bus - result ignored
                             
                             ADL_ADD <= 1; X_SB <= 1; SB_ADD <= 1; SUMS <= 1; C_ZERO <= 1; // add x register to base address low-byte (DL)
                         end
-                        ADC_ABX, SBC_ABX, AND_ABX, ORA_ABX, EOR_ABX, LDA_ABX: begin  // next cycle: add base address low-byte to X register, fetch base address high-byte
+                        ADC_ABX, SBC_ABX, AND_ABX, ORA_ABX, EOR_ABX, LDA_ABX,
+						STA_ABX: begin  // next cycle: add base address low-byte to X register, fetch base address high-byte
                             I_cycle <= 1;   // increment cycle counter
                             
                             PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
@@ -358,7 +369,8 @@ module InstructionDecoder(
                             
                             DL_DB <= 1; DB_ADD <= 1; X_SB <= 1; SB_ADD <= 1; SUMS <= 1; C_ZERO <= 1;    // send low-byte to ALU, add X register
                         end
-                        ADC_ABY, SBC_ABY, AND_ABY, ORA_ABY, EOR_ABY, LDA_ABY: begin  // next cycle: add base address low-byte to Y register, fetch base address high-byte
+                        ADC_ABY, SBC_ABY, AND_ABY, ORA_ABY, EOR_ABY, LDA_ABY,
+						STA_ABY: begin  // next cycle: add base address low-byte to Y register, fetch base address high-byte
                             I_cycle <= 1;   // increment cycle counter
                             
                             PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
@@ -366,7 +378,8 @@ module InstructionDecoder(
                             
                             DL_DB <= 1; DB_ADD <= 1; Y_SB <= 1; SB_ADD <= 1; SUMS <= 1; C_ZERO <= 1;    // send low-byte to ALU, add Y register
                         end
-						ADC_INY, SBC_INY, AND_INY, ORA_INY, EOR_INY, LDA_INY: begin	// next cycle: fetch indirect addr low-byte in zero page, add 1 to indirect addr low-byte
+						ADC_INY, SBC_INY, AND_INY, ORA_INY, EOR_INY, LDA_INY,
+						STA_INY: begin	// next cycle: fetch indirect addr low-byte in zero page, add 1 to indirect addr low-byte
 							I_cycle <= 1;   // increment cycle counter
                             
                             DL_ADL <= 1; Z_ADH <= 1; ADL_ABL <= 1; ADH_ABH <= 1;    // output low-byte (DL) and zeros to address bus
@@ -446,6 +459,12 @@ module InstructionDecoder(
                             
                             ADD_ADL <= 1; DL_ADH <= 1; ADL_ABL <= 1; ADH_ABH <= 1;  // send low-byte (ALU) to ABL, send high-byte (DL) to ABH
                         end
+                        STA_ABS: begin  // next cycle: output address, write accumulator data
+                            I_cycle <= 1;   // increment cycle counter
+                            
+                            ADD_ADL <= 1; DL_ADH <= 1; ADL_ABL <= 1; ADH_ABH <= 1;  // send low-byte (ALU) to ABL, send high-byte (DL) to ABH
+                            AC_DB <= 1; R_nW_int <= 0;      // write accumulator data to memory
+                        end
                         ADC_ZPG: begin  // next cycle: perform add, fetch next opcode
                             R_cycle <= 1;													// reset cycle counter to 0
 							
@@ -495,11 +514,24 @@ module InstructionDecoder(
 							DL_DB <= 1; DB_SB <= 1; SB_AC <= 1;				// load data into AC
 							DB7_N <= 1; DBZ_Z <= 1;                                 // add result flags to status reg
 						end
+						STA_ZPG: begin	// next cycle: fetch next opcode
+							R_cycle <= 1;													// reset cycle counter to 0
+							
+							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
+						end
                         ADC_ZPX, SBC_ZPX, AND_ZPX, ORA_ZPX, EOR_ZPX, LDA_ZPX: begin  // next cycle: output ALU result and zeros to address bus to retrieve data
                             I_cycle <= 1;   // increment cycle counter
                             
                             ADD_ADL <= 1; ADL_ABL <= 1; Z_ADH <= 1; ADH_ABH <= 1; // send low-byte (ALU) to ABL, send zeros to ABH
                         end
+						STA_ZPX: begin	// next cycle: output ALU result and zeros to address but to store data
+							I_cycle <= 1; 	// increment cycle counter
+							
+							ADD_ADL <= 1; ADL_ABL <= 1; Z_ADH <= 1; ADH_ABH <= 1; // send low-byte (ALU) to ABL, send zeros to ABH
+							
+							AC_DB <= 1; R_nW_int <= 0;	// write accumulator data to memory
+						end
                         ADC_ABX, ADC_ABY, SBC_ABX, SBC_ABY, AND_ABX, AND_ABY,
                         ORA_ABX, ORA_ABY, EOR_ABX, EOR_ABY, LDA_ABX, LDA_ABY: begin  // next cycle: if carry=1, add 1 to BAH; if carry=0, output address (skip cycle 3)
                             if (carry) begin
@@ -514,14 +546,23 @@ module InstructionDecoder(
                             ADD_ADL <= 1; ADL_ABL <= 1; DL_ADH <= 1; ADH_ABH <= 1;  // send (low-byte + X/Y) to ABL, send high-byte to ABH
                             
                         end
-                        ADC_INX, SBC_INX, AND_INX, ORA_INX, EOR_INX, LDA_INX: begin  // next cycle: output ALU result and zeros to address bus to retrieve low-byte, increment ALU result
+						STA_ABX, STA_ABY: begin	// next cycle: read from address regardless of page crossing, correct high-byte
+							S_cycle <= 1;
+							
+							DL_DB <= 1; DB_ADD <= 1; C_ONE <= carry; SUMS <= 1; // send high-byte to ALU, add carry if appropriate
+							
+							ADD_ADL <= 1; ADL_ABL <= 1; DL_ADH <= 1; ADH_ABH <= 1;  // send (low-byte + X/Y) to ABL, send high-byte to ABH
+						end
+                        ADC_INX, SBC_INX, AND_INX, ORA_INX, EOR_INX, LDA_INX,
+						STA_INX: begin  // next cycle: output ALU result and zeros to address bus to retrieve low-byte, increment ALU result
                             I_cycle <= 1;   // increment cycle counter
                             
                             ADD_ADL <= 1; ADL_ABL <= 1; Z_ADH <= 1; ADH_ABH <= 1; // send low-byte (ALU) to ABL, send zeros to ABH
                             
                             ADD_SB <= 1; SB_DB <= 1; DB_ADD <= 1; Z_ADD <= 1; SUMS <= 1; C_ONE <= 1; // add 1 to (low-byte + X) 
                         end
-						ADC_INY, SBC_INY, AND_INY, ORA_INY, EOR_INY, LDA_INY: begin	// next cycle: output ALU result and zeros to addres bus to retrieve high byte, add Y to fetched low byte
+						ADC_INY, SBC_INY, AND_INY, ORA_INY, EOR_INY, LDA_INY,
+						STA_INY: begin	// next cycle: output ALU result and zeros to addres bus to retrieve high byte, add Y to fetched low byte
 							I_cycle <= 1;   // increment cycle counter
 							
 							ADD_ADL <= 1; ADL_ABL <= 1; Z_ADH <= 1; ADH_ABH <= 1; // send incremented indirect low-byte (ALU) to ABL, send zeros to ABH
@@ -645,7 +686,14 @@ module InstructionDecoder(
 							DL_DB <= 1; DB_SB <= 1; SB_AC <= 1;				// load data into AC
 							DB7_N <= 1; DBZ_Z <= 1;                                 // add result flags to status reg
 						end
-                        ADC_INX, SBC_INX, AND_INX, ORA_INX, EOR_INX, LDA_INX: begin // next cycle: store address low-byte, fetch address high byte
+                        STA_ABS, STA_ZPX: begin  // next cycle: fetch next opcode
+                            R_cycle <= 1;
+                            
+                            PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
+                        end
+                        ADC_INX, SBC_INX, AND_INX, ORA_INX, EOR_INX, LDA_INX,
+						STA_INX: begin // next cycle: store address low-byte, fetch address high byte
                             I_cycle <= 1;   // increment cycle counter
                             
                             DL_DB <= 1; DB_ADD <= 1; Z_ADD <= 1; SUMS <= 1; C_ZERO <= 1;    // send low-byte to ALU, add zero
@@ -663,6 +711,13 @@ module InstructionDecoder(
                             end
 							
 							ADD_ADL <= 1; ADL_ABL <= 1; DL_ADH <= 1; ADH_ABH <= 1;  // send (low-byte + Y) to ABL, send high-byte to ABH
+						end
+						STA_INY: begin	// next cycle: read address regardless of carry, fix high-byte
+							S_cycle <= 1;
+							
+							DL_DB <= 1; DB_ADD <= 1; C_ONE <= carry; SUMS <= 1; // send high-byte to ALU, add carry if appropriate
+							
+							ADD_ADL <= 1; ADL_ABL <= 1; DL_ADH <= 1; ADH_ABH <= 1;  // send (low-byte + X/Y) to ABL, send high-byte to ABH
 						end
                         JMP_IND: begin  // next cycle: store address low-byte, output incremented indirect address to fetch high byte
                             I_cycle <= 1;   // increment cycle counter
@@ -734,11 +789,23 @@ module InstructionDecoder(
                             
                             ADD_SB <= 1; SB_ADH <= 1; ADH_ABH <= 1; // send incremented high-byte to ABH (low-byte already in ABL)
                         end
+						STA_ABX, STA_ABY: begin	// next cycle: write accumulator data to memory
+							I_cycle <= 1;
+							
+							AC_DB <= 1; R_nW_int <= 0;
+						end
                         ADC_INX, SBC_INX, AND_INX, ORA_INX, EOR_INX, LDA_INX: begin  //next cycle: send out fetched address to get data
                             I_cycle <= 1;   // increment cycle counter
                             
                             ADD_ADL <= 1; ADL_ABL <= 1; DL_ADH <= 1; ADH_ABH <= 1; // send low-byte (ALU) to ABL, send high-byte to ABH  
                         end
+						STA_INX: begin	// next cycle: write accumulator data to memory
+							I_cycle <= 1;
+							
+							ADD_ADL <= 1; ADL_ABL <= 1; DL_ADH <= 1; ADH_ABH <= 1; // send low-byte (ALU) to ABL, send high-byte to ABH  
+							
+							AC_DB <= 1; R_nW_int <= 0;	// write accumulator to memory
+						end
 						ADC_INY: begin	// there was NOT a page crossing - perform add and fetch next opcode
 							R_cycle <= 1;													// reset cycle counter to 0
 							
@@ -885,10 +952,23 @@ module InstructionDecoder(
 							DL_DB <= 1; DB_SB <= 1; SB_AC <= 1;				// load data into AC
 							DB7_N <= 1; DBZ_Z <= 1;                                 // add result flags to status reg
 						end
+						STA_ABX, STA_ABY, STA_INX: begin	// next cycle: fetch next opcode
+							R_cycle <= 1;
+                            
+                            PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
+						end
 						ADC_INY, SBC_INY, AND_INY, ORA_INY, EOR_INY, LDA_INY: begin	// there was a page crossing - now output (low byte + Y) and (high byte + 1) to fetch data
 							I_cycle <= 1;
                             
                             ADD_SB <= 1; SB_ADH <= 1; ADH_ABH <= 1; // send incremented high-byte to ABH (low-byte+Y already in ABL)
+						end
+						STA_INY: begin	// next cycle: write accumulator to memory
+							I_cycle <= 1;
+							
+							ADD_SB <= 1; SB_ADH <= 1; ADH_ABH <= 1; // send incremented high-byte to ABH (low-byte+Y already in ABL)
+							
+							AC_DB <= 1; R_nW_int <= 0;	// write accumulator to memory
 						end
 						JSR_ABS: begin	// next cycle: fetch first opcode in subroutine, save stack pointer (-2) back to S
 							R_cycle <= 1;	// reset cycle counter to 0
@@ -972,6 +1052,12 @@ module InstructionDecoder(
 							
 							DL_DB <= 1; DB_SB <= 1; SB_AC <= 1;				// load data into AC
 							DB7_N <= 1; DBZ_Z <= 1;                                 // add result flags to status reg
+						end
+						STA_INY: begin	// next cycle: fetch next opcode
+							R_cycle <= 1;
+							
+							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
 						end
                         BRK: begin  // next cycle: fetch 1st opcode of interrupt routine, store new PC
                             R_cycle <= 1;   // reset cycle counter to 0
