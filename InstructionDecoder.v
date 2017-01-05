@@ -9,7 +9,7 @@
 					  C_ZERO <= 0; DB_SB <= 0; ADL_PCL <= 0; ADH_PCH <= 0; PCH_DB <= 0; SB_S <= 0; I_S <= 0; D_S <= 0;	\
 					  S_SB <= 0; S_ADL <= 0; ONE_ADH <= 0; DB_P <= 0; R_nW_int <= 1; P_DB <= 0; PCL_DB <= 0; FF_ADH <= 0; \
                       FA_ADL <= 0; FE_ADL <= 0; CLR_INT <= 0; PL1_ADL <= 0; ONE_I <= 0; CLR_NMI <= 0; ANDS <= 0; \
-                      EORS <= 0; ORS <= 0;
+                      EORS <= 0; ORS <= 0; IR5_I <= 0; ZERO_V <= 0; IR5_D <= 0;
 	
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
@@ -53,6 +53,7 @@ module InstructionDecoder(
 	output reg SB_ADD, nDB_ADD, DB_ADD,	Z_ADD, C_ONE, nONE_ADD, ADL_ADD, C_ZERO,   	// ALU input control
     output reg SUMS, ANDS, EORS, ORS,        		     // ALU operation control
 	output reg AVR_V, ACR_C, DBZ_Z, DB7_N, IR5_C, DB_P,	// Processor status flag control
+    output reg IR5_I, ZERO_V, IR5_D,
     output reg FF_ADH, FA_ADL, FE_ADL, PL1_ADL,                 
     output reg CLR_INT, CLR_NMI, ONE_I
     );
@@ -105,7 +106,7 @@ module InstructionDecoder(
 							
 							ACR_C <= 1; DBZ_Z <= 1;	DB7_N <= 1;			// add result flags to status reg
 						end
-						SEC, CLC, TXA, TAX, TYA, TAY, 
+						SEC, CLC, SEI, CLI, CLV, SED, CLD, TXA, TAX, TYA, TAY, 
                         TXS, TSX, PLA, PLP, PHA, PHP,
 						LDA_IMM, LDA_ABS, LDA_ZPG, LDA_ZPX, LDA_ABX, LDA_ABY, LDA_INX, LDA_INY,
                         STA_ABS, STA_ZPG, STA_ZPX, STA_ABX, STA_ABY, STA_INX, STA_INY,
@@ -220,6 +221,30 @@ module InstructionDecoder(
 							
 							IR5_C <= 1;														// set carry flag to bit 5 of current opcode (1 if SEC, 0 if CLC)
 						end
+                        SEI, CLI: begin	// next cycle: set or clear interrupt-enable flag in status register, fetch next opcode
+							R_cycle <= 1;													// reset cycle counter to 0
+							
+							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
+							
+							IR5_I <= 1;														// set interrupt flag to bit 5 of current opcode (1 if SEI, 0 if CLI)
+						end
+                        CLV: begin	// next cycle: clear overflow flag in status register, fetch next opcode
+							R_cycle <= 1;													// reset cycle counter to 0
+							
+							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
+							
+							ZERO_V <= 1;												    // set overflow flag to 0
+						end
+                        SED, CLD: begin // next cycle: set or clear decimal flag in status register, fetch next opcode
+                            R_cycle <= 1;													// reset cycle counter to 0
+							
+							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
+							
+							IR5_D <= 1;														// set interrupt flag to bit 5 of current opcode (1 if SED, 0 if CLD)
+                        end
                         INX: begin // next cycle: ALU add 1 to X register, fetch next opcode
                             R_cycle <= 1;													// reset cycle counter to 0
 							
@@ -1082,7 +1107,7 @@ module InstructionDecoder(
 	// PC increment skipped if we're on a single-byte instruction or on first two cycles of an interrupt:
 	assign I_PC = ((cycle == 1'd1 && (IR == SEC || IR == CLC || IR == INX || IR == INY || IR == DEX || IR == DEY || IR == TAX || IR == TXA ||
 									 IR == TAY || IR == TYA || IR == TXS || IR == TSX || IR == PLA || IR == PLP || IR == PHP || IR == PHA ||
-                                     IR == RTS || IR == BRK || IR == RTI)) ||
+                                     IR == RTS || IR == BRK || IR == RTI || IR == SEI || IR == CLI || IR == CLV || IR == SED || IR == CLD)) ||
                    (R_cycle && int_flag && IR != BRK)) ? 1'd0 : I_PCint;    // does this work for a software break??
 	
 	// Opcode definitions:
@@ -1104,7 +1129,7 @@ module InstructionDecoder(
 					 LDA_INX = 8'ha1, STA_INX = 8'h81,
 					 LDA_INY = 8'hb1, STA_INY = 8'h91,
 					 
-					 SEC = 8'h38, CLC = 8'h18,
+					 SEC = 8'h38, CLC = 8'h18, SEI = 8'h78, CLI = 8'h58, CLV = 8'hb8, SED = 8'hf8, CLD = 8'hd8,
                      
                      BRK = 8'h00, RTI = 8'h40,
 					 

@@ -83,13 +83,13 @@ module CPUtester;
 		case (Addr_bus) 
 		
 			// program/data:
-			0: Data_bus_in = LDY_IMM;	
-			1: Data_bus_in = 8'hff;
-			2: Data_bus_in = STA_INY;
-			3: Data_bus_in = 8'h01;
-			4: Data_bus_in = 8'h00;
-			5: Data_bus_in = ADC_IMM;
-			6: Data_bus_in = 8'h01;		// not taken
+			0: Data_bus_in = CLC;	
+			1: Data_bus_in = SEC;
+			2: Data_bus_in = CLI;
+			3: Data_bus_in = SEI;
+			4: Data_bus_in = CLV;
+			5: Data_bus_in = CLD;
+			6: Data_bus_in = SED;		
 			7: Data_bus_in = 8'h00;
 			8: Data_bus_in = BNE;		// taken, no page crossing
 			9: Data_bus_in = 8'h02;
@@ -176,7 +176,7 @@ module CPUtester;
 					 LDA_INX = 8'ha1, STA_INX = 8'h81,
 					 LDA_INY = 8'hb1, STA_INY = 8'h91,
 					 
-					 SEC = 8'h38, CLC = 8'h18,
+					 SEC = 8'h38, CLC = 8'h18, SEI = 8'h78, CLI = 8'h58, CLV = 8'hb8, SED = 8'hf8, CLD = 8'hd8,
                      
                      BRK = 8'h00, RTI = 8'h40,
 					 
