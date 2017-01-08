@@ -83,24 +83,19 @@ module CPUtester;
 		case (Addr_bus) 
 		
 			// program/data:
-			0: Data_bus_in = CLC;	
-			1: Data_bus_in = SEC;
-			2: Data_bus_in = CLI;
-			3: Data_bus_in = SEI;
-			4: Data_bus_in = CLV;
-			5: Data_bus_in = CLD;
-			6: Data_bus_in = SED;		
-			7: Data_bus_in = 8'h00;
-			8: Data_bus_in = BNE;		// taken, no page crossing
-			9: Data_bus_in = 8'h02;
-			10: Data_bus_in = 8'h00;
-			11: Data_bus_in = 8'h00;
-			12: Data_bus_in = JMP_ABS;		
-			13: Data_bus_in = 8'hf0;
-			14: Data_bus_in = 8'h00;
+			0: Data_bus_in = LDA_IMM;
+			1: Data_bus_in = 8'haa;
+			2: Data_bus_in = CMP_IMM;	
+			3: Data_bus_in = 8'h11;
+			4: Data_bus_in = CMP_ZPG;
+			5: Data_bus_in = 8'h10;
+			6: Data_bus_in = CMP_ABS;
+			7: Data_bus_in = 8'h11;
+			8: Data_bus_in = 8'h00;		
+			9: Data_bus_in = 8'h00;
 			
-			16'h00f0: Data_bus_in = BNE;	// taken, page crossing
-			16'h00f1: Data_bus_in = 8'h10;
+			16'h0010: Data_bus_in = 8'haa;	
+			16'h0011: Data_bus_in = 8'hb0;
 			16'h00f2: Data_bus_in = 8'h00;
 			
 			16'h0102: Data_bus_in = ADC_IMM;
@@ -185,8 +180,8 @@ module CPUtester;
 					 
 					 LDX_IMM = 8'ha2, LDY_IMM = 8'ha0,
 					 
-					 CMP_IMM = 8'hc9, CPX_IMM = 8'he0, CPY_IMM = 8'hc0,
-					 CMP_ABS = 8'hcd, CPX_ZPG = 8'he4, CPY_ZPG = 8'hc4,
+					 CMP_IMM = 8'hc9, CPX_IMM = 8'he0, CPY_IMM = 8'hc0, BIT_ZPG = 8'h24,
+					 CMP_ABS = 8'hcd, CPX_ZPG = 8'he4, CPY_ZPG = 8'hc4,	BIT_ABS = 8'h2c,
 					 CMP_ZPG = 8'hc5, CPX_ABS = 8'hec, CPY_ABS = 8'hcc,
 					 CMP_ZPX = 8'hd5,
 					 CMP_ABX = 8'hdd,
@@ -197,6 +192,6 @@ module CPUtester;
 					 JMP_ABS = 8'h4c, JSR_ABS = 8'h20, RTS = 8'h60,
 					 JMP_IND = 8'h6c,
 						
-                     BPL = 8'h10, BMI = 8'h30, BVC = 8'h50, BVS = 8'h70, BCC = 8'h90, BCS = 8'hb0, BNE = 8'hd0, BEQ = 8'hf0;      
+                     BPL = 8'h10, BMI = 8'h30, BVC = 8'h50, BVS = 8'h70, BCC = 8'h90, BCS = 8'hb0, BNE = 8'hd0, BEQ = 8'hf0;     
 endmodule
 

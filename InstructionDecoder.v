@@ -9,7 +9,7 @@
 					  C_ZERO <= 0; DB_SB <= 0; ADL_PCL <= 0; ADH_PCH <= 0; PCH_DB <= 0; SB_S <= 0; I_S <= 0; D_S <= 0;	\
 					  S_SB <= 0; S_ADL <= 0; ONE_ADH <= 0; DB_P <= 0; R_nW_int <= 1; P_DB <= 0; PCL_DB <= 0; FF_ADH <= 0; \
                       FA_ADL <= 0; FE_ADL <= 0; CLR_INT <= 0; PL1_ADL <= 0; ONE_I <= 0; CLR_NMI <= 0; ANDS <= 0; \
-                      EORS <= 0; ORS <= 0; IR5_I <= 0; ZERO_V <= 0; IR5_D <= 0;
+                      EORS <= 0; ORS <= 0; IR5_I <= 0; ZERO_V <= 0; IR5_D <= 0; DB6_V <= 0;
 	
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
@@ -52,7 +52,7 @@ module InstructionDecoder(
 	output wire I_PC, 
 	output reg SB_ADD, nDB_ADD, DB_ADD,	Z_ADD, C_ONE, nONE_ADD, ADL_ADD, C_ZERO,   	// ALU input control
     output reg SUMS, ANDS, EORS, ORS,        		     // ALU operation control
-	output reg AVR_V, ACR_C, DBZ_Z, DB7_N, IR5_C, DB_P,	// Processor status flag control
+	output reg AVR_V, ACR_C, DBZ_Z, DB7_N, IR5_C, DB_P,	DB6_V, // Processor status flag control
     output reg IR5_I, ZERO_V, IR5_D,
     output reg FF_ADH, FA_ADL, FE_ADL, PL1_ADL,                 
     output reg CLR_INT, CLR_NMI, ONE_I
@@ -83,7 +83,6 @@ module InstructionDecoder(
 							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;					// increment PC
 				
 							ADD_SB <= 1; SB_AC <= 1; SB_DB <= 1;					// move ADD to AC through SB
-							
 							AVR_V <= 1; ACR_C <= 1; DBZ_Z <= 1;	DB7_N <= 1;			// add result flags to status reg
 						end
                         AND_IMM, AND_ABS, AND_ZPG, AND_ZPX, AND_ABX, AND_ABY, AND_INX, AND_INY,
@@ -95,7 +94,6 @@ module InstructionDecoder(
 							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;					// increment PC
 				
 							ADD_SB <= 1; SB_AC <= 1; SB_DB <= 1;					// move ADD to AC through SB
-							
 							DBZ_Z <= 1;	DB7_N <= 1;			                        // add result flags to status reg
 						end
 						CMP_IMM, CMP_ZPG, CMP_ABS, CMP_ZPX, CMP_ABX, CMP_ABY, CMP_INX, CMP_INY,
@@ -105,6 +103,7 @@ module InstructionDecoder(
 							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;	// output PC on address bus
 							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;					// increment PC
 							
+							ADD_SB <= 1; SB_DB <= 1;	// move alu result to DB (but not to accumulator)
 							ACR_C <= 1; DBZ_Z <= 1;	DB7_N <= 1;			// add result flags to status reg
 						end
 						SEC, CLC, SEI, CLI, CLV, SED, CLD, TXA, TAX, TYA, TAY, 
@@ -120,6 +119,15 @@ module InstructionDecoder(
 					
 							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;	// output PC on address bus
 							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;					// increment PC
+						end
+						BIT_ZPG, BIT_ABS: begin	// next cycle: fetch next byte, set result flag
+							I_cycle <= 1;											// increment cycle counter
+					
+							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;	// output PC on address bus
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;					// increment PC
+							
+							ADD_SB <= 1; SB_DB <= 1;	// move alu result to DB (but not to accumulator)
+							DBZ_Z <= 1;	// set flag based on ALU result
 						end
                         INX, DEX: begin  // next cycle: fetch next byte, store new value in X
                             I_cycle <= 1;											// increment cycle counter
@@ -357,7 +365,7 @@ module InstructionDecoder(
                             SB_Y <= 1; AC_DB <= 1; AC_SB <= 1; DB7_N <= 1; DBZ_Z <= 1;
                         end
                         ADC_ABS, SBC_ABS, AND_ABS, ORA_ABS, EOR_ABS, LDA_ABS,
-                        STA_ABS, CMP_ABS: begin  // next cycle: store address low-byte in ALU, fetch address high-byte
+                        STA_ABS, CMP_ABS, BIT_ABS: begin  // next cycle: store address low-byte in ALU, fetch address high-byte
                             I_cycle <= 1;   // increment cycle counter
                             
                             PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
@@ -365,7 +373,8 @@ module InstructionDecoder(
                             
                             DL_DB <= 1; DB_ADD <= 1; Z_ADD <= 1; SUMS <= 1; C_ZERO <= 1;     // send low-byte to ALU, add zero
                         end
-                        ADC_ZPG, SBC_ZPG, AND_ZPG, ORA_ZPG, EOR_ZPG, LDA_ZPG, CMP_ZPG: begin  // next cycle: output zero page address, fetch data
+                        ADC_ZPG, SBC_ZPG, AND_ZPG, ORA_ZPG, EOR_ZPG, LDA_ZPG, 
+						CMP_ZPG, BIT_ZPG: begin  // next cycle: output zero page address, fetch data
                             I_cycle <= 1;   // increment cycle counter
                             
                             DL_ADL <= 1; Z_ADH <= 1; ADL_ABL <= 1; ADH_ABH <= 1;    // output low-byte (DL) and zeros to address bus
@@ -481,7 +490,7 @@ module InstructionDecoder(
                 2: begin
                     case (IR)
                         ADC_ABS, SBC_ABS, AND_ABS, ORA_ABS, EOR_ABS, LDA_ABS,
-                        CMP_ABS: begin  // next cycle: output address, fetch data
+                        CMP_ABS, BIT_ABS: begin  // next cycle: output address, fetch data
                             I_cycle <= 1;   // increment cycle counter
                             
                             ADD_ADL <= 1; DL_ADH <= 1; ADL_ABL <= 1; ADH_ABH <= 1;  // send low-byte (ALU) to ABL, send high-byte (DL) to ABH
@@ -555,6 +564,16 @@ module InstructionDecoder(
 							
 							DL_DB <= 1; nDB_ADD <= 1; AC_SB <= 1; SB_ADD <= 1; SUMS <= 1; C_ONE <= 1;	// perform ALU add on AC, inverted DL (set carry to 1 automatically)
                         end
+						BIT_ZPG: begin	// next cycle: ALU add, fetch next opcode, set flags
+							R_cycle <= 1;													// reset cycle counter to 0
+							
+							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
+							
+							DL_DB <= 1; DB_ADD <= 1; AC_SB <= 1; SB_ADD <= 1; ANDS <= 1; 	// perform ALU and on AC
+							
+							DB7_N <= 1; DB6_V <= 1; DBZ_Z <= 1;	// set flags based on fetched memory (Z is only temporary)
+						end
                         ADC_ZPX, SBC_ZPX, AND_ZPX, ORA_ZPX, EOR_ZPX, LDA_ZPX,
                         CMP_ZPX: begin  // next cycle: output ALU result and zeros to address bus to retrieve data
                             I_cycle <= 1;   // increment cycle counter
@@ -737,6 +756,16 @@ module InstructionDecoder(
 							
 							DL_DB <= 1; nDB_ADD <= 1; AC_SB <= 1; SB_ADD <= 1; SUMS <= 1; C_ONE <= 1;	// perform ALU add on AC, inverted DL (set carry to 1 automatically)
                         end
+						BIT_ABS: begin	// next cycle: ALU add, fetch next opcode, set flags
+							R_cycle <= 1;													// reset cycle counter to 0
+							
+							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
+							
+							DL_DB <= 1; DB_ADD <= 1; AC_SB <= 1; SB_ADD <= 1; ANDS <= 1; 	// perform ALU and on AC
+							
+							DB7_N <= 1; DB6_V <= 1; DBZ_Z <= 1;	// set flags based on fetched memory (Z is only temporary)
+						end
                         ADC_INX, SBC_INX, AND_INX, ORA_INX, EOR_INX, LDA_INX,
 						STA_INX, CMP_INX: begin // next cycle: store address low-byte, fetch address high byte
                             I_cycle <= 1;   // increment cycle counter
@@ -1185,8 +1214,8 @@ module InstructionDecoder(
 					 
 					 LDX_IMM = 8'ha2, LDY_IMM = 8'ha0,
 					 
-					 CMP_IMM = 8'hc9, CPX_IMM = 8'he0, CPY_IMM = 8'hc0,
-					 CMP_ABS = 8'hcd, CPX_ZPG = 8'he4, CPY_ZPG = 8'hc4,
+					 CMP_IMM = 8'hc9, CPX_IMM = 8'he0, CPY_IMM = 8'hc0, BIT_ZPG = 8'h24,
+					 CMP_ABS = 8'hcd, CPX_ZPG = 8'he4, CPY_ZPG = 8'hc4,	BIT_ABS = 8'h2c,
 					 CMP_ZPG = 8'hc5, CPX_ABS = 8'hec, CPY_ABS = 8'hcc,
 					 CMP_ZPX = 8'hd5,
 					 CMP_ABX = 8'hdd,
