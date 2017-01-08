@@ -83,13 +83,13 @@ module CPUtester;
 		case (Addr_bus) 
 		
 			// program/data:
-			0: Data_bus_in = LDX_IMM;
+			0: Data_bus_in = LDY_IMM;
 			1: Data_bus_in = 8'hf0;
-			2: Data_bus_in = LDY_IMM;	
+			2: Data_bus_in = LDX_IMM;	
 			3: Data_bus_in = 8'h01;
-			4: Data_bus_in = LDX_ZPY;
+			4: Data_bus_in = LDY_ZPX;
 			5: Data_bus_in = 8'h10;
-			6: Data_bus_in = LDX_ABY;
+			6: Data_bus_in = LDY_ABX;
 			7: Data_bus_in = 8'h11;
 			8: Data_bus_in = 8'h00;		
 			9: Data_bus_in = 8'h00;
@@ -179,10 +179,10 @@ module CPUtester;
                      TXS = 8'h9a, TSX = 8'hba, PHA = 8'h48, PLA = 8'h68, PHP = 8'h08, PLP = 8'h28,
 					 
 					 LDX_IMM = 8'ha2, LDY_IMM = 8'ha0,
-					 LDX_ZPG = 8'ha6,
-					 LDX_ZPY = 8'hb6,
-					 LDX_ABS = 8'hae,
-					 LDX_ABY = 8'hbe,
+					 LDX_ZPG = 8'ha6, LDY_ZPG = 8'ha4,
+					 LDX_ZPY = 8'hb6, LDY_ZPX = 8'hb4,
+					 LDX_ABS = 8'hae, LDY_ABS = 8'hac,
+					 LDX_ABY = 8'hbe, LDY_ABX = 8'hbc,
 					 
 					 CMP_IMM = 8'hc9, CPX_IMM = 8'he0, CPY_IMM = 8'hc0, BIT_ZPG = 8'h24,
 					 CMP_ABS = 8'hcd, CPX_ZPG = 8'he4, CPY_ZPG = 8'hc4,	BIT_ABS = 8'h2c,
