@@ -87,18 +87,18 @@ module CPUtester;
 			1: Data_bus_in = 8'h01;
 			2: Data_bus_in = LDY_IMM;	
 			3: Data_bus_in = 8'h02;
-			4: Data_bus_in = STX_ZPG;
+			4: Data_bus_in = CPX_IMM;
 			5: Data_bus_in = 8'h10;
-			6: Data_bus_in = STX_ZPY;
+			6: Data_bus_in = CPX_ZPG;
 			7: Data_bus_in = 8'h10;
-			8: Data_bus_in = STY_ZPX;		
+			8: Data_bus_in = CPY_ZPG;		
 			9: Data_bus_in = 8'h10;
-			10: Data_bus_in = STY_ABS;
-			11: Data_bus_in = 8'h13;
+			10: Data_bus_in = CPY_ABS;
+			11: Data_bus_in = 8'h11;
 			12: Data_bus_in = 8'h00;
 			
-			16'h0010: Data_bus_in = 8'he8;	
-			16'h0011: Data_bus_in = 8'h88;
+			16'h0010: Data_bus_in = 8'h01;	
+			16'h0011: Data_bus_in = 8'h02;
 			16'h0012: Data_bus_in = 8'he6;
 			
 			16'h0102: Data_bus_in = ADC_IMM;
