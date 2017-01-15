@@ -34,7 +34,7 @@ module CPU(
 	wire I_cycle, R_cycle, DL_DB, AC_SB, ADD_SB, PCL_ADL, PCH_ADH, SB_AC, ADL_ABL, ADH_ABH, I_PC, PCL_PCL, PCH_PCH, SB_ADD, nDB_ADD, DB_ADD, SUMS,
 			ACR_C, AVR_V, SB_DB, DBZ_Z, DB7_N, IR5_C, Z_ADD, ADD_ADL, DL_ADH, DL_ADL, Z_ADH, SB_X, SB_Y, X_SB, Y_SB, C_ONE, nONE_ADD, AC_DB, ADL_ADD,
             S_cycle, SB_ADH, C_ZERO, DB_SB, ADL_PCL, ADH_PCH, PCH_DB, SB_S, I_S, D_S, S_SB, S_ADL, ONE_ADH, DB_P, R_nW_int, P_DB, PCL_DB, FF_ADH, 
-            FA_ADL, FE_ADL, PL1_ADL, CLR_INT, ONE_I, CLR_NMI, ANDS, EORS, ORS, IR5_I, ZERO_V, IR5_D, DB6_V;	// control lines
+            FA_ADL, FE_ADL, PL1_ADL, CLR_INT, ONE_I, CLR_NMI, ANDS, EORS, ORS, IR5_I, ZERO_V, IR5_D, DB6_V, SRS;	// control lines
 	wire [7:0] IR;							// instruction register
 	wire [2:0] cycle, next_cycle;			// cycle counter and next_cycle indicator
 	wire [7:0] PCL, PCH;					// program counter high and low byte registers
@@ -132,14 +132,14 @@ module CPU(
 						   .ADL_ADD(ADL_ADD), .C_ZERO(C_ZERO), .DB_SB(DB_SB), .ADL_PCL(ADL_PCL), .ADH_PCH(ADH_PCH), .PCH_DB(PCH_DB), .SB_S(SB_S), .I_S(I_S), .D_S(D_S),
 						   .S_SB(S_SB), .S_ADL(S_ADL), .ONE_ADH(ONE_ADH), .DB_P(DB_P), .R_nW_int(R_nW_int), .P_DB(P_DB), .PCL_DB(PCL_DB), .FF_ADH(FF_ADH), 
                            .FA_ADL(FA_ADL), .FE_ADL(FE_ADL), .PL1_ADL(PL1_ADL), .CLR_INT(CLR_INT), .ONE_I(ONE_I), .CLR_NMI(CLR_NMI), .ANDS(ANDS), .EORS(EORS), 
-                           .ORS(ORS), .IR5_I(IR5_I), .ZERO_V(ZERO_V), .IR5_D(IR5_D), .DB6_V(DB6_V));
+                           .ORS(ORS), .IR5_I(IR5_I), .ZERO_V(ZERO_V), .IR5_D(IR5_D), .DB6_V(DB6_V), .SRS(SRS));
 						   
 	// Program counter sets current... program counter: 					   
 	ProgramCounter pc (.rst(rst), .CLOCK_ph2(clk_ph2), .ADLin(ADL), .ADHin(ADH), .INC_en(I_PC), .PCLin_en(PCL_PCL), .PCHin_en(PCH_PCH),
 					   .ADLin_en(ADL_PCL), .ADHin_en(ADH_PCH), .PCLout(PCL), .PCHout(PCH));
 	
 	// Arithmetic and logic unit performs all operations:
-	ALU alu (.SUM_en(SUMS), .AND_en(ANDS), .EOR_en(EORS), .OR_en(ORS), .SR_en(1'd0), .INV_en(nDB_ADD),
+	ALU alu (.SUM_en(SUMS), .AND_en(ANDS), .EOR_en(EORS), .OR_en(ORS), .SR_en(SRS), .INV_en(nDB_ADD),
 			 .Ain(AI), .Bin(BI), .Cin(CI), .RES(ALU_result), .Cout(C), .OVFout(OVF));
              
     // Interrupt controller detects interrupt and reset requests:

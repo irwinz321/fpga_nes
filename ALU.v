@@ -50,7 +50,7 @@ module ALU(
         else if (OR_en)
             RES = Ain | Bin;				// or
         else if (SR_en)
-            {RES, Cout} = Ain >> 1;			// shift right with carry-out
+            {RES, Cout} = {Ain,1'd0} >> 1;			// shift right with carry-out
 		
     end
 	

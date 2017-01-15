@@ -9,7 +9,7 @@
 					  C_ZERO <= 0; DB_SB <= 0; ADL_PCL <= 0; ADH_PCH <= 0; PCH_DB <= 0; SB_S <= 0; I_S <= 0; D_S <= 0;	\
 					  S_SB <= 0; S_ADL <= 0; ONE_ADH <= 0; DB_P <= 0; R_nW_int <= 1; P_DB <= 0; PCL_DB <= 0; FF_ADH <= 0; \
                       FA_ADL <= 0; FE_ADL <= 0; CLR_INT <= 0; PL1_ADL <= 0; ONE_I <= 0; CLR_NMI <= 0; ANDS <= 0; \
-                      EORS <= 0; ORS <= 0; IR5_I <= 0; ZERO_V <= 0; IR5_D <= 0; DB6_V <= 0;
+                      EORS <= 0; ORS <= 0; IR5_I <= 0; ZERO_V <= 0; IR5_D <= 0; DB6_V <= 0; SRS <= 0;
 	
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
@@ -51,7 +51,7 @@ module InstructionDecoder(
 	output reg PCL_PCL, PCH_PCH,				        // program counter control
 	output wire I_PC, 
 	output reg SB_ADD, nDB_ADD, DB_ADD,	Z_ADD, C_ONE, nONE_ADD, ADL_ADD, C_ZERO,   	// ALU input control
-    output reg SUMS, ANDS, EORS, ORS,        		     // ALU operation control
+    output reg SUMS, ANDS, EORS, ORS, SRS,     		     // ALU operation control
 	output reg AVR_V, ACR_C, DBZ_Z, DB7_N, IR5_C, DB_P,	DB6_V, // Processor status flag control
     output reg IR5_I, ZERO_V, IR5_D,
     output reg FF_ADH, FA_ADL, FE_ADL, PL1_ADL,                 
@@ -96,6 +96,15 @@ module InstructionDecoder(
 							ADD_SB <= 1; SB_AC <= 1; SB_DB <= 1;					// move ADD to AC through SB
 							DBZ_Z <= 1;	DB7_N <= 1;			                        // add result flags to status reg
 						end
+                        LSR_ACC: begin  // next cycle: store ALU result, fetch next byte
+                            I_cycle <= 1;											// increment cycle counter
+					
+							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;	// output PC on address bus
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;					// increment PC
+				
+							ADD_SB <= 1; SB_AC <= 1; SB_DB <= 1;					// move ADD to AC through SB
+							ACR_C <= 1; DBZ_Z <= 1;	DB7_N <= 1;			// add result flags to status reg
+                        end
 						CMP_IMM, CMP_ZPG, CMP_ABS, CMP_ZPX, CMP_ABX, CMP_ABY, CMP_INX, CMP_INY,
                         CPX_IMM, CPX_ZPG, CPX_ABS, CPY_IMM, CPY_ZPG, CPY_ABS: begin	// next cycle: set flags, fetch next byte
 							I_cycle <= 1;											// increment cycle counter
@@ -160,6 +169,14 @@ module InstructionDecoder(
 				end
 				1: begin   
 					case (IR)
+                        LSR_ACC: begin  // next cycle: ALU shift right, fetch next opcode
+                            R_cycle <= 1;													// reset cycle counter to 0
+							
+							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
+                            
+                            AC_SB <= 1; SB_ADD <= 1; SRS <= 1;  // perform ALU shift right on AC
+                        end
 						ADC_IMM: begin  // next cycle: ALU add, fetch next opcode
 							R_cycle <= 1;													// reset cycle counter to 0
 							
@@ -1319,7 +1336,8 @@ module InstructionDecoder(
 	// PC increment skipped if we're on a single-byte instruction or on first two cycles of an interrupt:
 	assign I_PC = ((cycle == 1'd1 && (IR == SEC || IR == CLC || IR == INX || IR == INY || IR == DEX || IR == DEY || IR == TAX || IR == TXA ||
 									 IR == TAY || IR == TYA || IR == TXS || IR == TSX || IR == PLA || IR == PLP || IR == PHP || IR == PHA ||
-                                     IR == RTS || IR == BRK || IR == RTI || IR == SEI || IR == CLI || IR == CLV || IR == SED || IR == CLD)) ||
+                                     IR == RTS || IR == BRK || IR == RTI || IR == SEI || IR == CLI || IR == CLV || IR == SED || IR == CLD ||
+                                     IR == LSR_ACC)) ||
                    (R_cycle && int_flag && IR != BRK)) ? 1'd0 : I_PCint;    // does this work for a software break??
 	
 	// Opcode definitions:
@@ -1331,6 +1349,12 @@ module InstructionDecoder(
                      ADC_ABY = 8'h79, SBC_ABY = 8'hf9,  AND_ABY = 8'h39, ORA_ABY = 8'h19, EOR_ABY = 8'h59,
                      ADC_INX = 8'h61, SBC_INX = 8'he1,  AND_INX = 8'h21, ORA_INX = 8'h01, EOR_INX = 8'h41,
                      ADC_INY = 8'h71, SBC_INY = 8'hf1,  AND_INY = 8'h31, ORA_INY = 8'h11, EOR_INY = 8'h51,
+                     
+                     LSR_ACC = 8'h4a,
+                     LSR_ZPG = 8'h46,
+                     LSR_ZPX = 8'h56,
+                     LSR_ABS = 8'h4e,
+                     LSR_ABX = 8'h5e,
 					 
 					 LDA_IMM = 8'ha9, 
 					 LDA_ABS = 8'had, STA_ABS = 8'h8d,

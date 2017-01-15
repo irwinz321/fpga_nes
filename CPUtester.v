@@ -83,14 +83,14 @@ module CPUtester;
 		case (Addr_bus) 
 		
 			// program/data:
-			0: Data_bus_in = LDX_IMM;
+			0: Data_bus_in = LDA_IMM;
 			1: Data_bus_in = 8'h01;
-			2: Data_bus_in = LDY_IMM;	
-			3: Data_bus_in = 8'h02;
-			4: Data_bus_in = CPX_IMM;
-			5: Data_bus_in = 8'h10;
-			6: Data_bus_in = CPX_ZPG;
-			7: Data_bus_in = 8'h10;
+			2: Data_bus_in = LSR_ACC;	
+			3: Data_bus_in = ADC_IMM;
+			4: Data_bus_in = 8'h01;
+			5: Data_bus_in = JMP_ABS;
+			6: Data_bus_in = 8'h02;
+			7: Data_bus_in = 8'h00;
 			8: Data_bus_in = CPY_ZPG;		
 			9: Data_bus_in = 8'h10;
 			10: Data_bus_in = CPY_ABS;
@@ -164,6 +164,12 @@ module CPUtester;
                      ADC_ABY = 8'h79, SBC_ABY = 8'hf9,  AND_ABY = 8'h39, ORA_ABY = 8'h19, EOR_ABY = 8'h59,
                      ADC_INX = 8'h61, SBC_INX = 8'he1,  AND_INX = 8'h21, ORA_INX = 8'h01, EOR_INX = 8'h41,
                      ADC_INY = 8'h71, SBC_INY = 8'hf1,  AND_INY = 8'h31, ORA_INY = 8'h11, EOR_INY = 8'h51,
+                     
+                     LSR_ACC = 8'h4a,
+                     LSR_ZPG = 8'h46,
+                     LSR_ZPX = 8'h56,
+                     LSR_ABS = 8'h4e,
+                     LSR_ABX = 8'h5e,
 					 
 					 LDA_IMM = 8'ha9, 
 					 LDA_ABS = 8'had, STA_ABS = 8'h8d,
