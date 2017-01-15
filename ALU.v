@@ -20,6 +20,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 module ALU(  
     input wire SUM_en, AND_en, EOR_en, OR_en, SR_en, INV_en,	// Operation control
+	input wire ROR_en,											// Operation control
     input wire [7:0] Ain, Bin, 									// Data inputs
 	input wire Cin, 											// Carry in
 	output reg [7:0] RES,										// Operation result
@@ -50,7 +51,9 @@ module ALU(
         else if (OR_en)
             RES = Ain | Bin;				// or
         else if (SR_en)
-            {RES, Cout} = {Ain,1'd0} >> 1;			// shift right with carry-out
+            {RES, Cout} = {Ain,1'd0} >> 1;	// shift right with carry-out
+		else if (ROR_en)
+			{RES, Cout} = {Cin,Ain,1'd0} >> 1;	// shift right with carry-in, carry-out
 		
     end
 	

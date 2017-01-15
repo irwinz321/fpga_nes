@@ -43,6 +43,7 @@
    <wvobject fp_name="/CPUtester/AC_dbg" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">AC_dbg[7:0]</obj_property>
       <obj_property name="ObjectShortName">AC_dbg[7:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/CPUtester/X_dbg" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">X_dbg[7:0]</obj_property>
@@ -62,8 +63,8 @@
       <obj_property name="ObjectShortName">P_dbg[7:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/CPUtester/cycle_dbg" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">cycle_dbg[2:0]</obj_property>
-      <obj_property name="ObjectShortName">cycle_dbg[2:0]</obj_property>
+      <obj_property name="ElementShortName">cycle_dbg[3:0]</obj_property>
+      <obj_property name="ObjectShortName">cycle_dbg[3:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/CPUtester/clk_ph1" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">clk_ph1</obj_property>
