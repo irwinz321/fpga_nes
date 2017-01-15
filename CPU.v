@@ -27,7 +27,7 @@ module CPU(
 	output reg R_nW,			// Output Read/Not-Write
     output [7:0] IR_dbg, AC_dbg, X_dbg, Y_dbg, P_dbg, S_dbg,
     output [15:0] PC_dbg,
-    output [2:0] cycle_dbg
+    output [3:0] cycle_dbg
     );
 	
 	// Signal declarations:
@@ -36,7 +36,7 @@ module CPU(
             S_cycle, SB_ADH, C_ZERO, DB_SB, ADL_PCL, ADH_PCH, PCH_DB, SB_S, I_S, D_S, S_SB, S_ADL, ONE_ADH, DB_P, R_nW_int, P_DB, PCL_DB, FF_ADH, 
             FA_ADL, FE_ADL, PL1_ADL, CLR_INT, ONE_I, CLR_NMI, ANDS, EORS, ORS, IR5_I, ZERO_V, IR5_D, DB6_V, SRS;	// control lines
 	wire [7:0] IR;							// instruction register
-	wire [2:0] cycle, next_cycle;			// cycle counter and next_cycle indicator
+	wire [3:0] cycle, next_cycle;			// cycle counter and next_cycle indicator
 	wire [7:0] PCL, PCH;					// program counter high and low byte registers
 	wire [7:0] DB, SB, ADL, ADH;			// internal busses (data bus, system bus, address bus low and high)
 	wire [7:0] AI, BI, ALU_result;			// ALU signals (Ainput, Binput, result)

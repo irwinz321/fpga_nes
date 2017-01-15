@@ -22,7 +22,7 @@ module InterruptController(
 	input clk_ph1, clk_ph2,			// Clock phases 
 	input rst, irq, nmi,			// System reset, IRQ (active low), NMI (active low)
 	input int_clr, nmi_clr, irq_mask,		// Clear perform-interrupt flag, clear NMI-pending flag, IRQ mask bit
-    input [2:0] cycle, next_cycle,     // Current and next instruction cycles
+    input [3:0] cycle, next_cycle,     // Current and next instruction cycles
     input [7:0] IR,                      // Current instruction
 	output reg irq_out, nmi_out, int_out	// Flags for pending IRQ/NMI and perform-interrupt signal outputs
     );
