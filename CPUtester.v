@@ -36,7 +36,7 @@ module CPUtester;
 	wire R_nW;
 	wire [7:0] IR_dbg, AC_dbg, X_dbg, Y_dbg, P_dbg, S_dbg;
     wire [15:0] PC_dbg;
-    wire [2:0] cycle_dbg;
+    wire [3:0] cycle_dbg;
 	
 	// Useful signals;
 	reg [7:0] cycle_count;
@@ -87,15 +87,15 @@ module CPUtester;
 			1: Data_bus_in = 8'haa;
 			2: Data_bus_in = LDX_IMM;	
 			3: Data_bus_in = 8'h01;
-			4: Data_bus_in = ASL_ACC;
-			5: Data_bus_in = ASL_ZPG;
+			4: Data_bus_in = ROL_ACC;
+			5: Data_bus_in = ROL_ZPG;
 			6: Data_bus_in = 8'h10;
-			7: Data_bus_in = ASL_ZPX;
+			7: Data_bus_in = ROL_ZPX;
 			8: Data_bus_in = 8'h10;		
-			9: Data_bus_in = ASL_ABS;
+			9: Data_bus_in = ROL_ABS;
 			10: Data_bus_in = 8'h12;
 			11: Data_bus_in = 8'h00;
-			12: Data_bus_in = ASL_ABX;
+			12: Data_bus_in = ROL_ABX;
 			13: Data_bus_in = 8'h12;
 			14: Data_bus_in = 8'h00;
 			
@@ -159,20 +159,20 @@ module CPUtester;
 	
 	
 	// Opcode definitions:
-	localparam [7:0] ADC_IMM = 8'h69, SBC_IMM = 8'he9,  AND_IMM = 8'h29, ORA_IMM = 8'h09, EOR_IMM = 8'h49,
-                     ADC_ABS = 8'h6d, SBC_ABS = 8'hed,  AND_ABS = 8'h2d, ORA_ABS = 8'h0d, EOR_ABS = 8'h4d,
-					 ADC_ZPG = 8'h65, SBC_ZPG = 8'he5,  AND_ZPG = 8'h25, ORA_ZPG = 8'h05, EOR_ZPG = 8'h45,
-                     ADC_ZPX = 8'h75, SBC_ZPX = 8'hf5,  AND_ZPX = 8'h35, ORA_ZPX = 8'h15, EOR_ZPX = 8'h55,
-                     ADC_ABX = 8'h7d, SBC_ABX = 8'hfd,  AND_ABX = 8'h3d, ORA_ABX = 8'h1d, EOR_ABX = 8'h5d,
-                     ADC_ABY = 8'h79, SBC_ABY = 8'hf9,  AND_ABY = 8'h39, ORA_ABY = 8'h19, EOR_ABY = 8'h59,
-                     ADC_INX = 8'h61, SBC_INX = 8'he1,  AND_INX = 8'h21, ORA_INX = 8'h01, EOR_INX = 8'h41,
-                     ADC_INY = 8'h71, SBC_INY = 8'hf1,  AND_INY = 8'h31, ORA_INY = 8'h11, EOR_INY = 8'h51,
+	localparam [7:0] ADC_IMM = 8'h69, SBC_IMM = 8'he9, AND_IMM = 8'h29, ORA_IMM = 8'h09, EOR_IMM = 8'h49,
+                     ADC_ABS = 8'h6d, SBC_ABS = 8'hed, AND_ABS = 8'h2d, ORA_ABS = 8'h0d, EOR_ABS = 8'h4d,
+					 ADC_ZPG = 8'h65, SBC_ZPG = 8'he5, AND_ZPG = 8'h25, ORA_ZPG = 8'h05, EOR_ZPG = 8'h45,
+                     ADC_ZPX = 8'h75, SBC_ZPX = 8'hf5, AND_ZPX = 8'h35, ORA_ZPX = 8'h15, EOR_ZPX = 8'h55,
+                     ADC_ABX = 8'h7d, SBC_ABX = 8'hfd, AND_ABX = 8'h3d, ORA_ABX = 8'h1d, EOR_ABX = 8'h5d,
+                     ADC_ABY = 8'h79, SBC_ABY = 8'hf9, AND_ABY = 8'h39, ORA_ABY = 8'h19, EOR_ABY = 8'h59,
+                     ADC_INX = 8'h61, SBC_INX = 8'he1, AND_INX = 8'h21, ORA_INX = 8'h01, EOR_INX = 8'h41,
+                     ADC_INY = 8'h71, SBC_INY = 8'hf1, AND_INY = 8'h31, ORA_INY = 8'h11, EOR_INY = 8'h51,
                      
-                     LSR_ACC = 8'h4a, ASL_ACC = 8'h0a,
-                     LSR_ZPG = 8'h46, ASL_ZPG = 8'h06,
-                     LSR_ZPX = 8'h56, ASL_ZPX = 8'h16,
-                     LSR_ABS = 8'h4e, ASL_ABS = 8'h0e,
-                     LSR_ABX = 8'h5e, ASL_ABX = 8'h1e,
+                     LSR_ACC = 8'h4a, ASL_ACC = 8'h0a, ROL_ACC = 8'h2a, ROR_ACC = 8'h6a,
+                     LSR_ZPG = 8'h46, ASL_ZPG = 8'h06, ROL_ZPG = 8'h26, ROR_ZPG = 8'h66,
+                     LSR_ZPX = 8'h56, ASL_ZPX = 8'h16, ROL_ZPX = 8'h36, ROR_ZPX = 8'h76,
+                     LSR_ABS = 8'h4e, ASL_ABS = 8'h0e, ROL_ABS = 8'h2e, ROR_ABS = 8'h6e,
+                     LSR_ABX = 8'h5e, ASL_ABX = 8'h1e, ROL_ABX = 8'h3e, ROR_ABX = 8'h7e,
 					 
 					 LDA_IMM = 8'ha9, 
 					 LDA_ABS = 8'had, STA_ABS = 8'h8d,
@@ -208,6 +208,6 @@ module CPUtester;
 					 JMP_ABS = 8'h4c, JSR_ABS = 8'h20, RTS = 8'h60,
 					 JMP_IND = 8'h6c,
 						
-                     BPL = 8'h10, BMI = 8'h30, BVC = 8'h50, BVS = 8'h70, BCC = 8'h90, BCS = 8'hb0, BNE = 8'hd0, BEQ = 8'hf0;    
+                     BPL = 8'h10, BMI = 8'h30, BVC = 8'h50, BVS = 8'h70, BCC = 8'h90, BCS = 8'hb0, BNE = 8'hd0, BEQ = 8'hf0;  
 endmodule
 
