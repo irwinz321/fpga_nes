@@ -83,23 +83,26 @@ module CPUtester;
 		case (Addr_bus) 
 		
 			// program/data:
-			0: Data_bus_in = LDX_IMM;
-			1: Data_bus_in = 8'h01;
-			2: Data_bus_in = LSR_ABX;	
-			3: Data_bus_in = 8'h10;
-			4: Data_bus_in = 8'h00;
-			5: Data_bus_in = ADC_IMM;
-			6: Data_bus_in = 8'h02;
-			7: Data_bus_in = 8'h00;
-			8: Data_bus_in = CPY_ZPG;		
-			9: Data_bus_in = 8'h10;
-			10: Data_bus_in = CPY_ABS;
-			11: Data_bus_in = 8'h11;
-			12: Data_bus_in = 8'h00;
+			0: Data_bus_in = LDA_IMM;
+			1: Data_bus_in = 8'haa;
+			2: Data_bus_in = LDX_IMM;	
+			3: Data_bus_in = 8'h01;
+			4: Data_bus_in = ASL_ACC;
+			5: Data_bus_in = ASL_ZPG;
+			6: Data_bus_in = 8'h10;
+			7: Data_bus_in = ASL_ZPX;
+			8: Data_bus_in = 8'h10;		
+			9: Data_bus_in = ASL_ABS;
+			10: Data_bus_in = 8'h12;
+			11: Data_bus_in = 8'h00;
+			12: Data_bus_in = ASL_ABX;
+			13: Data_bus_in = 8'h12;
+			14: Data_bus_in = 8'h00;
 			
-			16'h0010: Data_bus_in = 8'h03;	
-			16'h0011: Data_bus_in = 8'h03;
-			16'h0012: Data_bus_in = 8'he6;
+			16'h0010: Data_bus_in = 8'h80;	
+			16'h0011: Data_bus_in = 8'hf0;
+			16'h0012: Data_bus_in = 8'h40;
+			16'h0013: Data_bus_in = 8'h01;
 			
 			16'h0102: Data_bus_in = ADC_IMM;
 			16'h0103: Data_bus_in = 8'h01;
@@ -165,11 +168,11 @@ module CPUtester;
                      ADC_INX = 8'h61, SBC_INX = 8'he1,  AND_INX = 8'h21, ORA_INX = 8'h01, EOR_INX = 8'h41,
                      ADC_INY = 8'h71, SBC_INY = 8'hf1,  AND_INY = 8'h31, ORA_INY = 8'h11, EOR_INY = 8'h51,
                      
-                     LSR_ACC = 8'h4a,
-                     LSR_ZPG = 8'h46,
-                     LSR_ZPX = 8'h56,
-                     LSR_ABS = 8'h4e,
-                     LSR_ABX = 8'h5e,
+                     LSR_ACC = 8'h4a, ASL_ACC = 8'h0a,
+                     LSR_ZPG = 8'h46, ASL_ZPG = 8'h06,
+                     LSR_ZPX = 8'h56, ASL_ZPX = 8'h16,
+                     LSR_ABS = 8'h4e, ASL_ABS = 8'h0e,
+                     LSR_ABX = 8'h5e, ASL_ABX = 8'h1e,
 					 
 					 LDA_IMM = 8'ha9, 
 					 LDA_ABS = 8'had, STA_ABS = 8'h8d,
