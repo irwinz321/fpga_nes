@@ -25,8 +25,8 @@ module InstructionController(
 	input [7:0] PD,			// pre-decode register
     input int_flag,         // perform interrupt
     output reg [7:0] IR,    // instruction register
-    output reg [3:0] cycle,  // current instruction cycle
-    output [3:0] next_cycle // next instruction cycle
+    output reg [2:0] cycle,  // current instruction cycle
+    output [2:0] next_cycle // next instruction cycle
     );
     
 // Signal declarations:
@@ -34,9 +34,9 @@ module InstructionController(
 wire [7:0] opcode;      // Opcode to put into instruction register
     
 // Decide what the next cycle count should be:
-assign next_cycle = (R_cycle == 1) ? 4'd0                                             // if reset_cycle, reset count to 0
-                                   : (I_cycle == 1) ? cycle + 4'd1                    // else, if increment_cycle, increment count
-                                                    : (S_cycle == 1) ? cycle + 4'd2   // else, if skip_cycle, increment count twice
+assign next_cycle = (R_cycle == 1) ? 3'd0                                             // if reset_cycle, reset count to 0
+                                   : (I_cycle == 1) ? cycle + 3'd1                    // else, if increment_cycle, increment count
+                                                    : (S_cycle == 1) ? cycle + 3'd2   // else, if skip_cycle, increment count twice
                                                                      : cycle;         // else, don't change count
     
 // Decide what gets loaded into the instruction register (change only on T1 cycle):
@@ -47,8 +47,8 @@ assign opcode = (next_cycle == 1) ? (int_flag ? 8'd0 : PD)      // on next T1, l
 always @(posedge clk_ph1) begin
 
 	if (rst == 0) begin
-		cycle <= 8;				// Reset cycle counter to MAX (not 0! - necessary to get 1st opcode after reset)
-		IR <= 0;				// Reset IR
+		cycle <= 0;				// Reset cycle counter to 1 to start reset sequence
+		IR <= 0;				// Reset IR - starts out in BRK
 	end
 	else begin
     

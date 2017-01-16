@@ -9,7 +9,7 @@
 					  C_ZERO <= 0; DB_SB <= 0; ADL_PCL <= 0; ADH_PCH <= 0; PCH_DB <= 0; SB_S <= 0; I_S <= 0; D_S <= 0;	\
 					  S_SB <= 0; S_ADL <= 0; ONE_ADH <= 0; DB_P <= 0; R_nW_int <= 1; P_DB <= 0; PCL_DB <= 0; FF_ADH <= 0; \
                       FA_ADL <= 0; FE_ADL <= 0; CLR_INT <= 0; PL1_ADL <= 0; ONE_I <= 0; CLR_NMI <= 0; ANDS <= 0; \
-                      EORS <= 0; ORS <= 0; IR5_I <= 0; ZERO_V <= 0; IR5_D <= 0; DB6_V <= 0; SRS <= 0; RORS <= 0;
+                      EORS <= 0; ORS <= 0; IR5_I <= 0; ZERO_V <= 0; IR5_D <= 0; DB6_V <= 0; SRS <= 0; RORS <= 0; FC_ADL <= 0;
 	
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
@@ -33,7 +33,7 @@
 module InstructionDecoder(
 	input clk_ph2,								        // clock phase 2
 	input rst,									        // reset signal
-	input [3:0] cycle,							        // current instruction cycle
+	input [2:0] cycle,							        // current instruction cycle
 	input [7:0] IR,								        // instruction register
     input carry, A_sign,                                // ALU carry bit and A input sign bit (for page crossing)
     input [7:0] P,                                      // processor status register (for branching)
@@ -54,7 +54,7 @@ module InstructionDecoder(
     output reg SUMS, ANDS, EORS, ORS, SRS, RORS,	     // ALU operation control
 	output reg AVR_V, ACR_C, DBZ_Z, DB7_N, IR5_C, DB_P,	DB6_V, // Processor status flag control
     output reg IR5_I, ZERO_V, IR5_D, 
-    output reg FF_ADH, FA_ADL, FE_ADL, PL1_ADL,                 
+    output reg FF_ADH, FA_ADL, FC_ADL, FE_ADL, PL1_ADL,                 
     output reg CLR_INT, CLR_NMI, ONE_I
     );
 	
@@ -1257,16 +1257,19 @@ module InstructionDecoder(
                             I_cycle <= 1;   // increment cycle counter
                             
                             FF_ADH <= 1; ADH_ABH <= 1;  // high byte of 1st interrupt vector always 0xFF
+							
                             if (nmi_flag) begin
                                 FA_ADL <= 1;            // if NMI, low byte is 0xFA
-                                CLR_NMI <= 1; //CLR_IRQ <= 1;   // clear NMI and IRQ flags
+                                CLR_NMI <= 1; 			// clear NMI flag
                             end
+							else if (int_flag && !irq_flag && !nmi_flag) begin
+								FC_ADL <= 1;			// if reset, low byte is 0xFC
+							end
                             else begin
                                 FE_ADL <= 1;            // else, low byte is 0xFE
-                                //CLR_IRQ <= 1;           // clear IRQ flag --> should this be different for a software BRK??
                             end
-                            ADL_ABL <= 1;
 							
+                            ADL_ABL <= 1;
 							CLR_INT <= 1;	// clear do-interrupt flag
                         end
 						RTI: begin	// next cycle: store PCL, fetch PCH from stack

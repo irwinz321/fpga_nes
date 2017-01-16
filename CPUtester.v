@@ -36,7 +36,7 @@ module CPUtester;
 	wire R_nW;
 	wire [7:0] IR_dbg, AC_dbg, X_dbg, Y_dbg, P_dbg, S_dbg;
     wire [15:0] PC_dbg;
-    wire [3:0] cycle_dbg;
+    wire [2:0] cycle_dbg;
 	
 	// Useful signals;
 	reg [7:0] cycle_count;
@@ -126,6 +126,8 @@ module CPUtester;
 			// interrupt vectors:
 			16'hfffa: Data_bus_in = 8'h00;	// nmi
 			16'hfffb: Data_bus_in = 8'h20;
+			16'hfffc: Data_bus_in = 8'h00;	// reset
+			16'hfffd: Data_bus_in = 8'h00;	
 			16'hfffe: Data_bus_in = 8'h00;	// irq
 			16'hffff: Data_bus_in = 8'h20;
 			

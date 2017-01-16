@@ -27,16 +27,16 @@ module CPU(
 	output reg R_nW,			// Output Read/Not-Write
     output [7:0] IR_dbg, AC_dbg, X_dbg, Y_dbg, P_dbg, S_dbg,
     output [15:0] PC_dbg,
-    output [3:0] cycle_dbg
+    output [2:0] cycle_dbg
     );
 	
 	// Signal declarations:
 	wire I_cycle, R_cycle, DL_DB, AC_SB, ADD_SB, PCL_ADL, PCH_ADH, SB_AC, ADL_ABL, ADH_ABH, I_PC, PCL_PCL, PCH_PCH, SB_ADD, nDB_ADD, DB_ADD, SUMS,
 			ACR_C, AVR_V, SB_DB, DBZ_Z, DB7_N, IR5_C, Z_ADD, ADD_ADL, DL_ADH, DL_ADL, Z_ADH, SB_X, SB_Y, X_SB, Y_SB, C_ONE, nONE_ADD, AC_DB, ADL_ADD,
             S_cycle, SB_ADH, C_ZERO, DB_SB, ADL_PCL, ADH_PCH, PCH_DB, SB_S, I_S, D_S, S_SB, S_ADL, ONE_ADH, DB_P, R_nW_int, P_DB, PCL_DB, FF_ADH, 
-            FA_ADL, FE_ADL, PL1_ADL, CLR_INT, ONE_I, CLR_NMI, ANDS, EORS, ORS, IR5_I, ZERO_V, IR5_D, DB6_V, SRS, RORS;	// control lines
+            FA_ADL, FE_ADL, PL1_ADL, CLR_INT, ONE_I, CLR_NMI, ANDS, EORS, ORS, IR5_I, ZERO_V, IR5_D, DB6_V, SRS, RORS, FC_ADL;	// control lines
 	wire [7:0] IR;							// instruction register
-	wire [3:0] cycle, next_cycle;			// cycle counter and next_cycle indicator
+	wire [2:0] cycle, next_cycle;			// cycle counter and next_cycle indicator
 	wire [7:0] PCL, PCH;					// program counter high and low byte registers
 	wire [7:0] DB, SB, ADL, ADH;			// internal busses (data bus, system bus, address bus low and high)
 	wire [7:0] AI, BI, ALU_result;			// ALU signals (Ainput, Binput, result)
@@ -50,7 +50,7 @@ module CPU(
 	// Select inputs to internal busses:
 	assign SB = AC_SB ? AC : (ADD_SB ? ADD : (X_SB ? X : (Y_SB ? Y : 8'd0)));   // Select System Bus input (AC, ADD, X, Y, ...)
 	assign DB = DL_DB ? DL : (AC_DB ? AC : ((SB_DB & S_SB) ? S : (SB_DB ? SB : (PCH_DB ? PCH : (P_DB ? P : (PCL_DB ? PCL : 8'd0))))));  // Select Data Bus input (DL, AC, SB, ...)
-	assign ADL = PCL_ADL ? PCL : (ADD_ADL ? ADD : (DL_ADL ? DL : (S_ADL ? S : (FA_ADL ? 8'hfa : (FE_ADL ? 8'hfe : (PL1_ADL ? ABL + 8'd1 : 8'd0)))))); // Select Address Low Bus input (PCL, ADD, DL, ...)
+	assign ADL = PCL_ADL ? PCL : (ADD_ADL ? ADD : (DL_ADL ? DL : (S_ADL ? S : (FA_ADL ? 8'hfa : (FC_ADL ? 8'hfc : (FE_ADL ? 8'hfe : (PL1_ADL ? ABL + 8'd1 : 8'd0))))))); // Select Address Low Bus input (PCL, ADD, DL, ...)
 	assign ADH = Z_ADH ? 8'd0 : (ONE_ADH ? 8'd1 : (FF_ADH ? 8'hff : (PCH_ADH ? PCH : (DL_ADH ? DL : ((SB_ADH & DB_SB) ? DB : (SB_ADH ? SB : 8'd0))))));	// Select Address High Bus input (ZERO, PCH, DL, SB...)
 	
 	// Select ALU inputs:
@@ -68,7 +68,7 @@ module CPU(
 			P <= 8'h34;     // bits 2,4 and 5 set by default
             X <= 8'd0;
             Y <= 8'd0;
-            Sin <= 8'hff;
+            Sin <= 8'h00;
 			DOR <= 8'h0;
 			R_nW <= 1;
 		end
@@ -94,7 +94,7 @@ module CPU(
             Sin <= I_S ? S + 8'h01 : (D_S ? S - 8'h01 : (SB_S ? SB : S)); // Stack point can be incremented/decremented, or get input from SB - holds otherwise
 			
 			DOR <= DB;
-			R_nW <= R_nW_int;		// Read/not-write latched from internal control line
+			R_nW <= (INT_flag && !IRQ_flag && !NMI_flag) ? 1'd1 : R_nW_int;		// Read/not-write (always read if in reset sequence)
 		end		
 	end
 	
@@ -106,7 +106,7 @@ module CPU(
 			ADD <= 0;
 			Creg <= 0;
 			OVFreg <= 0;
-			S <= 8'hff;
+			S <= 8'h00;
 		end
 		else begin
 			PD <= R_nW ? Data_bus_in : Data_bus_out;		// data gets latched to PD automatically
@@ -132,7 +132,7 @@ module CPU(
 						   .ADL_ADD(ADL_ADD), .C_ZERO(C_ZERO), .DB_SB(DB_SB), .ADL_PCL(ADL_PCL), .ADH_PCH(ADH_PCH), .PCH_DB(PCH_DB), .SB_S(SB_S), .I_S(I_S), .D_S(D_S),
 						   .S_SB(S_SB), .S_ADL(S_ADL), .ONE_ADH(ONE_ADH), .DB_P(DB_P), .R_nW_int(R_nW_int), .P_DB(P_DB), .PCL_DB(PCL_DB), .FF_ADH(FF_ADH), 
                            .FA_ADL(FA_ADL), .FE_ADL(FE_ADL), .PL1_ADL(PL1_ADL), .CLR_INT(CLR_INT), .ONE_I(ONE_I), .CLR_NMI(CLR_NMI), .ANDS(ANDS), .EORS(EORS), 
-                           .ORS(ORS), .IR5_I(IR5_I), .ZERO_V(ZERO_V), .IR5_D(IR5_D), .DB6_V(DB6_V), .SRS(SRS), .RORS(RORS));
+                           .ORS(ORS), .IR5_I(IR5_I), .ZERO_V(ZERO_V), .IR5_D(IR5_D), .DB6_V(DB6_V), .SRS(SRS), .RORS(RORS), .FC_ADL(FC_ADL));
 						   
 	// Program counter sets current... program counter: 					   
 	ProgramCounter pc (.rst(rst), .CLOCK_ph2(clk_ph2), .ADLin(ADL), .ADHin(ADH), .INC_en(I_PC), .PCLin_en(PCL_PCL), .PCHin_en(PCH_PCH),
