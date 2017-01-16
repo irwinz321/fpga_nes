@@ -87,22 +87,22 @@ module CPUtester;
 			1: Data_bus_in = 8'haa;
 			2: Data_bus_in = LDX_IMM;	
 			3: Data_bus_in = 8'h01;
-			4: Data_bus_in = ROR_ACC;
-			5: Data_bus_in = ROR_ZPG;
-			6: Data_bus_in = 8'h10;
-			7: Data_bus_in = ROR_ZPX;
-			8: Data_bus_in = 8'h10;		
-			9: Data_bus_in = ROR_ABS;
-			10: Data_bus_in = 8'h12;
-			11: Data_bus_in = 8'h00;
-			12: Data_bus_in = ROR_ABX;
-			13: Data_bus_in = 8'h12;
+			4: Data_bus_in = INC_ZPG;
+			5: Data_bus_in = 8'h10;
+			6: Data_bus_in = INC_ZPX;
+			7: Data_bus_in = 8'h10;
+			8: Data_bus_in = INC_ABS;		
+			9: Data_bus_in = 8'h12;
+			10: Data_bus_in = 8'h00;
+			11: Data_bus_in = INC_ABX;
+			12: Data_bus_in = 8'h12;
+			13: Data_bus_in = 8'h00;
 			14: Data_bus_in = 8'h00;
 			
-			16'h0010: Data_bus_in = 8'haa;	
-			16'h0011: Data_bus_in = 8'h55;
-			16'h0012: Data_bus_in = 8'h2a;
-			16'h0013: Data_bus_in = 8'h95;
+			16'h0010: Data_bus_in = 8'hff;	
+			16'h0011: Data_bus_in = 8'h00;
+			16'h0012: Data_bus_in = 8'h0f;
+			16'h0013: Data_bus_in = 8'h7f;
 			16'h0014: Data_bus_in = 8'h4a;
 			
 			16'h0102: Data_bus_in = ADC_IMM;
@@ -174,6 +174,11 @@ module CPUtester;
                      LSR_ZPX = 8'h56, ASL_ZPX = 8'h16, ROL_ZPX = 8'h36, ROR_ZPX = 8'h76,
                      LSR_ABS = 8'h4e, ASL_ABS = 8'h0e, ROL_ABS = 8'h2e, ROR_ABS = 8'h6e,
                      LSR_ABX = 8'h5e, ASL_ABX = 8'h1e, ROL_ABX = 8'h3e, ROR_ABX = 8'h7e,
+					 
+					 INC_ZPG = 8'he6, DEC_ZPG = 8'hc6,
+					 INC_ZPX = 8'hf6, DEC_ZPX = 8'hd6,
+					 INC_ABS = 8'hee, DEC_ABS = 8'hce,
+					 INC_ABX = 8'hfe, DEC_ABX = 8'hde,
 					 
 					 LDA_IMM = 8'ha9, 
 					 LDA_ABS = 8'had, STA_ABS = 8'h8d,
