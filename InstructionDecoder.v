@@ -116,7 +116,7 @@ module InstructionDecoder(
 							ACR_C <= 1; DBZ_Z <= 1;	DB7_N <= 1;			// add result flags to status reg
 						end
 						SEC, CLC, SEI, CLI, CLV, SED, CLD, TXA, TAX, TYA, TAY, 
-                        TXS, TSX, PLA, PLP, PHA, PHP,
+                        TXS, TSX, PLA, PLP, PHA, PHP, NOP,
 						LDA_IMM, LDA_ABS, LDA_ZPG, LDA_ZPX, LDA_ABX, LDA_ABY, LDA_INX, LDA_INY,
                         STA_ABS, STA_ZPG, STA_ZPX, STA_ABX, STA_ABY, STA_INX, STA_INY,
 						LDX_IMM, LDX_ABS, LDX_ZPG, LDX_ZPY, LDX_ABY, 
@@ -175,6 +175,12 @@ module InstructionDecoder(
 				end
 				1: begin   
 					case (IR)
+						NOP: begin	// next cycle: fetch next opcode
+							R_cycle <= 1;													// reset cycle counter to 0
+							
+							PCL_ADL <= 1; ADL_ABL <= 1; PCH_ADH <= 1; ADH_ABH <= 1;			// output PC on address bus
+							I_PCint <= 1; PCL_PCL <= 1; PCH_PCH <= 1;							// increment PC
+						end
                         LSR_ACC: begin  // next cycle: ALU shift right, fetch next opcode
                             R_cycle <= 1;													// reset cycle counter to 0
 							
@@ -1560,7 +1566,7 @@ module InstructionDecoder(
 	assign I_PC = ((cycle == 1'd1 && (IR == SEC || IR == CLC || IR == INX || IR == INY || IR == DEX || IR == DEY || IR == TAX || IR == TXA ||
 									 IR == TAY || IR == TYA || IR == TXS || IR == TSX || IR == PLA || IR == PLP || IR == PHP || IR == PHA ||
                                      IR == RTS || IR == BRK || IR == RTI || IR == SEI || IR == CLI || IR == CLV || IR == SED || IR == CLD ||
-                                     IR == LSR_ACC || IR == ASL_ACC || IR == ROL_ACC || IR == ROR_ACC)) ||
+                                     IR == LSR_ACC || IR == ASL_ACC || IR == ROL_ACC || IR == ROR_ACC || IR == NOP)) ||
                    (R_cycle && int_flag && IR != BRK)) ? 1'd0 : I_PCint;    // does this work for a software break??
 	
 	// Opcode definitions:
@@ -1594,6 +1600,8 @@ module InstructionDecoder(
 					 LDA_INY = 8'hb1, STA_INY = 8'h91,
 					 
 					 SEC = 8'h38, CLC = 8'h18, SEI = 8'h78, CLI = 8'h58, CLV = 8'hb8, SED = 8'hf8, CLD = 8'hd8,
+					 
+					 NOP = 8'hea,
                      
                      BRK = 8'h00, RTI = 8'h40,
 					 

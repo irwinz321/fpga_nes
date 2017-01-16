@@ -83,14 +83,14 @@ module CPUtester;
 		case (Addr_bus) 
 		
 			// program/data:
-			0: Data_bus_in = LDA_IMM;
-			1: Data_bus_in = 8'haa;
+			0: Data_bus_in = NOP;
+			1: Data_bus_in = NOP;
 			2: Data_bus_in = LDX_IMM;	
 			3: Data_bus_in = 8'h01;
 			4: Data_bus_in = INC_ZPG;
 			5: Data_bus_in = 8'h10;
-			6: Data_bus_in = INC_ZPX;
-			7: Data_bus_in = 8'h10;
+			6: Data_bus_in = NOP;
+			7: Data_bus_in = NOP;
 			8: Data_bus_in = INC_ABS;		
 			9: Data_bus_in = 8'h12;
 			10: Data_bus_in = 8'h00;
@@ -190,6 +190,8 @@ module CPUtester;
 					 LDA_INY = 8'hb1, STA_INY = 8'h91,
 					 
 					 SEC = 8'h38, CLC = 8'h18, SEI = 8'h78, CLI = 8'h58, CLV = 8'hb8, SED = 8'hf8, CLD = 8'hd8,
+					 
+					 NOP = 8'hea,
                      
                      BRK = 8'h00, RTI = 8'h40,
 					 
