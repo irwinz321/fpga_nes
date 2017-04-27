@@ -19,6 +19,7 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 module CPU(
+	input sys_clock,			// Primary system clock
 	input clk_ph1, clk_ph2,		// Clock phases - this will change to a single clock... eventually.
 	input rst, irq, nmi,		// System reset, IRQ (active low), NMI (active low)
 	input [7:0] Data_bus_in,	// Input Data Bus
@@ -60,7 +61,7 @@ module CPU(
 	
 	
 	// Latch registers on phase 1:
-	always @(posedge clk_ph1) begin
+	always @(posedge sys_clock) begin
 		if (rst == 0) begin
 			AC <= 8'd0;
 			ABL <= 8'd0;
@@ -72,7 +73,7 @@ module CPU(
 			DOR <= 8'h0;
 			R_nW <= 1;
 		end
-		else begin
+		else if (clk_ph1) begin
 			AC <= (SB_AC & DB_SB) ? DB : (SB_AC ? SB : AC);			// AC has inputs from SB, DB when SB/DB connected
             
 			ABL <= (ADL_ABL ? ADL : ABL);		// ABL has inputs from ADL only	- holds value otherwise
@@ -99,7 +100,7 @@ module CPU(
 	end
 	
 	// Latch registers on phase 2:
-	always @(posedge clk_ph2) begin
+	always @(posedge sys_clock) begin
 		if (rst == 0) begin
 			PD <= 0;
 			DL <= 0;
@@ -108,7 +109,7 @@ module CPU(
 			OVFreg <= 0;
 			S <= 8'h00;
 		end
-		else begin
+		else if (clk_ph2) begin
 			PD <= R_nW ? Data_bus_in : Data_bus_out;		// data gets latched to PD automatically
 			DL <= R_nW ? Data_bus_in : Data_bus_out;		// data gets latched to DL automatically
 			ADD <= ALU_result;	// alu result stored in ADD
@@ -119,11 +120,11 @@ module CPU(
 	end
 	
 	// Instruction controller sets IR and Cycle Counter:
-	InstructionController ic (.rst(rst), .clk_ph1(clk_ph1), .I_cycle(I_cycle), .R_cycle(R_cycle), .S_cycle(S_cycle), .PD(PD), .IR(IR), .cycle(cycle),
+	InstructionController ic (.sys_clock(sys_clock), .rst(rst), .clk_ph1(clk_ph1), .I_cycle(I_cycle), .R_cycle(R_cycle), .S_cycle(S_cycle), .PD(PD), .IR(IR), .cycle(cycle),
                               .next_cycle(next_cycle), .int_flag(INT_flag));
 	
 	// Instruction decoder uses IR and Cycle counter to determine which control lines active on NEXT cycle:
-	InstructionDecoder id (.clk_ph2(clk_ph2), .rst(rst), .cycle(cycle), .IR(IR), .I_cycle(I_cycle), .R_cycle(R_cycle), .carry(C), .A_sign(AI[7]), .P(P),
+	InstructionDecoder id (.sys_clock(sys_clock), .clk_ph2(clk_ph2), .rst(rst), .cycle(cycle), .IR(IR), .I_cycle(I_cycle), .R_cycle(R_cycle), .carry(C), .A_sign(AI[7]), .P(P),
                            .irq_flag(IRQ_flag), .nmi_flag(NMI_flag), .int_flag(INT_flag),
 						   .DL_DB(DL_DB), .AC_SB(AC_SB), .ADD_SB(ADD_SB), .PCL_ADL(PCL_ADL), .PCH_ADH(PCH_ADH), .SB_AC(SB_AC), .ADL_ABL(ADL_ABL), .ADH_ABH(ADH_ABH), 
 						   .I_PC(I_PC), .PCL_PCL(PCL_PCL), .PCH_PCH(PCH_PCH), .SB_ADD(SB_ADD), .nDB_ADD(nDB_ADD), .DB_ADD(DB_ADD), .SUMS(SUMS), .AVR_V(AVR_V), .ACR_C(ACR_C),
@@ -135,7 +136,7 @@ module CPU(
                            .ORS(ORS), .IR5_I(IR5_I), .ZERO_V(ZERO_V), .IR5_D(IR5_D), .DB6_V(DB6_V), .SRS(SRS), .RORS(RORS), .FC_ADL(FC_ADL));
 						   
 	// Program counter sets current... program counter: 					   
-	ProgramCounter pc (.rst(rst), .CLOCK_ph2(clk_ph2), .ADLin(ADL), .ADHin(ADH), .INC_en(I_PC), .PCLin_en(PCL_PCL), .PCHin_en(PCH_PCH),
+	ProgramCounter pc (.sys_clock(sys_clock), .rst(rst), .CLOCK_ph2(clk_ph2), .ADLin(ADL), .ADHin(ADH), .INC_en(I_PC), .PCLin_en(PCL_PCL), .PCHin_en(PCH_PCH),
 					   .ADLin_en(ADL_PCL), .ADHin_en(ADH_PCH), .PCLout(PCL), .PCHout(PCH));
 	
 	// Arithmetic and logic unit performs all operations:
@@ -143,7 +144,7 @@ module CPU(
 			 .Ain(AI), .Bin(BI), .Cin(CI), .RES(ALU_result), .Cout(C), .OVFout(OVF));
              
     // Interrupt controller detects interrupt and reset requests:
-    InterruptController intc (.clk_ph1(clk_ph1), .clk_ph2(clk_ph2), .rst(rst), .irq(irq), .nmi(nmi), .int_clr(CLR_INT), .nmi_clr(CLR_NMI), .irq_mask(P[2]),
+    InterruptController intc (.sys_clock(sys_clock), .clk_ph1(clk_ph1), .clk_ph2(clk_ph2), .rst(rst), .irq(irq), .nmi(nmi), .int_clr(CLR_INT), .nmi_clr(CLR_NMI), .irq_mask(P[2]),
                               .cycle(cycle), .next_cycle(next_cycle), .IR(IR), .irq_out(IRQ_flag), .nmi_out(NMI_flag), .int_out(INT_flag));
 
 		

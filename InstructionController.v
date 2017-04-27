@@ -19,7 +19,8 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 module InstructionController(
-	input wire rst, 		// Reset signal
+	input sys_clock,		// Main system clock
+	input rst, 				// Reset signal
     input clk_ph1,			// clock phase 1
     input I_cycle, R_cycle, S_cycle, // increment/reset/skip cycle counter lines
 	input [7:0] PD,			// pre-decode register
@@ -44,13 +45,13 @@ assign opcode = (next_cycle == 1) ? (int_flag ? 8'd0 : PD)      // on next T1, l
                                   : IR;     // if not T1 cycle, keep last opcode
     
 // Latch new values on ph1:
-always @(posedge clk_ph1) begin
+always @(posedge sys_clock) begin
 
 	if (rst == 0) begin
 		cycle <= 0;				// Reset cycle counter to 1 to start reset sequence
 		IR <= 0;				// Reset IR - starts out in BRK
 	end
-	else begin
+	else if (clk_ph1) begin
     
 		cycle <= next_cycle;    // Latch cycle    
         IR <= opcode; // Latch current opcode

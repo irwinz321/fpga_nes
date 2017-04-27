@@ -19,6 +19,7 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 module ProgramCounter(
+	input wire sys_clock,				// Main system clock
 	input wire rst, 					// Reset signal
 	input wire [7:0] ADLin, ADHin,		// Address Bus low & high bytes
 	input wire INC_en, 					// Increment PC enable
@@ -63,13 +64,13 @@ always @(*) begin
 end
 
 // Latch PC on phase 2 clock:
-always @(posedge CLOCK_ph2) begin
+always @(posedge sys_clock) begin
 	
 	if (rst == 0) begin			// initialize PC to 1st instruction address
 		PCL <= 0;
 		PCH <= 0;
 	end
-	else begin
+	else if (CLOCK_ph2) begin
 		if (INC_en) begin		// if Increment enabled, latch incremented PC
 			PCL <= PCL_inc;
 			PCH <= PCH_inc;

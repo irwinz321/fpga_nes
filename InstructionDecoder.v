@@ -31,6 +31,7 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 module InstructionDecoder(
+	input sys_clock,									// main system clock
 	input clk_ph2,								        // clock phase 2
 	input rst,									        // reset signal
 	input [2:0] cycle,							        // current instruction cycle
@@ -62,12 +63,12 @@ module InstructionDecoder(
 	reg I_PCint;	// internal PC increment control - allows skipping of PC increment for single-byte instructions3
 	
 	// Decode current opcode based on cycle:
-	always @(posedge clk_ph2) begin
+	always @(posedge sys_clock) begin
 		
 		if (rst == 0) begin
 			`RESET_OUTPUTS	// Reset control lines - also sets the initial values
 		end
-		else begin
+		else if (clk_ph2) begin
 		
 			`RESET_OUTPUTS	// Reset all control lines so we don't forget any
 			
@@ -791,7 +792,7 @@ module InstructionDecoder(
 						INC_ABX, DEC_ABX: begin	// next cycle: read from address regardless of page crossing, correct high-byte
 							S_cycle <= 1;
 							
-							DL_DB <= 1; DB_ADD <= 1; C_ONE <= carry; SUMS <= 1; // send high-byte to ALU, add carry if appropriate
+							DL_DB <= 1; DB_ADD <= 1; C_ONE <= carry; C_ZERO <= !carry; SUMS <= 1; // send high-byte to ALU, add carry if appropriate
 							
 							ADD_ADL <= 1; ADL_ABL <= 1; DL_ADH <= 1; ADH_ABH <= 1;  // send (low-byte + X/Y) to ABL, send high-byte to ABH
 						end
@@ -1064,7 +1065,7 @@ module InstructionDecoder(
 						STA_INY: begin	// next cycle: read address regardless of carry, fix high-byte
 							S_cycle <= 1;
 							
-							DL_DB <= 1; DB_ADD <= 1; C_ONE <= carry; SUMS <= 1; // send high-byte to ALU, add carry if appropriate
+							DL_DB <= 1; DB_ADD <= 1; C_ONE <= carry; C_ZERO <= !carry; SUMS <= 1; // send high-byte to ALU, add carry if appropriate
 							
 							ADD_ADL <= 1; ADL_ABL <= 1; DL_ADH <= 1; ADH_ABH <= 1;  // send (low-byte + X/Y) to ABL, send high-byte to ABH
 						end
@@ -1161,7 +1162,7 @@ module InstructionDecoder(
 						STA_ABX, STA_ABY: begin	// next cycle: write accumulator data to memory
 							I_cycle <= 1;
 							
-							AC_DB <= 1; R_nW_int <= 0;
+							AC_DB <= 1; R_nW_int <= 0; ADD_SB <= 1; SB_ADH <= 1; ADH_ABH <= 1;	// send fixed high-byte to ABH (low-byte already in ABL)
 						end
                         ADC_INX, SBC_INX, AND_INX, ORA_INX, EOR_INX, LDA_INX, CMP_INX: begin  //next cycle: send out fetched address to get data
                             I_cycle <= 1;   // increment cycle counter

@@ -25,6 +25,7 @@
 module CPUtester;
 
 	// Inputs
+	reg sys_clock;
 	reg clk_ph1;
 	reg clk_ph2;
 	reg rst, irq, nmi;
@@ -43,6 +44,7 @@ module CPUtester;
 
 	// Instantiate the Unit Under Test (UUT)
 	CPU uut (
+		.sys_clock(sys_clock),
 		.clk_ph1(clk_ph1), 
 		.clk_ph2(clk_ph2), 
 		.rst(rst),
@@ -64,6 +66,7 @@ module CPUtester;
 
 	initial begin
 		// Initialize Inputs
+		sys_clock = 0;
 		clk_ph1 = 0;
 		clk_ph2 = 1;
 		rst = 0;
@@ -83,30 +86,36 @@ module CPUtester;
 		case (Addr_bus) 
 		
 			// program/data:
-			0: Data_bus_in = NOP;
-			1: Data_bus_in = NOP;
-			2: Data_bus_in = LDX_IMM;	
-			3: Data_bus_in = 8'h01;
-			4: Data_bus_in = INC_ZPG;
-			5: Data_bus_in = 8'h10;
-			6: Data_bus_in = NOP;
-			7: Data_bus_in = NOP;
-			8: Data_bus_in = INC_ABS;		
-			9: Data_bus_in = 8'h12;
-			10: Data_bus_in = 8'h00;
-			11: Data_bus_in = INC_ABX;
-			12: Data_bus_in = 8'h12;
-			13: Data_bus_in = 8'h00;
-			14: Data_bus_in = 8'h00;
+			0: Data_bus_in = LDX_IMM;
+			1: Data_bus_in = 8'h00;
+			2: Data_bus_in = STA_ABX;
+			3: Data_bus_in = 8'h85;
+			4: Data_bus_in = 8'h05;	
+			5: Data_bus_in = 8'h00;
+			6: Data_bus_in = INC_ZPG;
+			7: Data_bus_in = 8'h10;
+			8: Data_bus_in = NOP;
+			9: Data_bus_in = NOP;
+			10: Data_bus_in = INC_ABS;		
+			11: Data_bus_in = 8'h12;
+			12: Data_bus_in = 8'h00;
+			13: Data_bus_in = INC_ABX;
+			14: Data_bus_in = 8'h12;
+			15: Data_bus_in = 8'h00;
 			
 			16'h0010: Data_bus_in = 8'hff;	
 			16'h0011: Data_bus_in = 8'h00;
 			16'h0012: Data_bus_in = 8'h0f;
 			16'h0013: Data_bus_in = 8'h7f;
 			16'h0014: Data_bus_in = 8'h4a;
+			16'h0033: Data_bus_in = 8'h00;
+			16'h0034: Data_bus_in = 8'h04;
 			
 			16'h0102: Data_bus_in = ADC_IMM;
 			16'h0103: Data_bus_in = 8'h01;
+			
+			16'h0400: Data_bus_in = 8'h7f;
+			16'h0500: Data_bus_in = 8'h00;
 			
 			// ISR:
 			16'h2000: Data_bus_in = ADC_IMM;
@@ -153,9 +162,14 @@ module CPUtester;
 		//	nmi <= 1;
 	end
 	
+	always begin
+		#1;
+		sys_clock = !sys_clock;
+	end
+	
 	// clock phase gen:
 	always begin
-		#500;
+		#2;
 		clk_ph2 = !clk_ph2;
 		clk_ph1 = !clk_ph1;
 	end

@@ -19,6 +19,7 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 module InterruptController(
+	input sys_clock,				// Main system clock
 	input clk_ph1, clk_ph2,			// Clock phases 
 	input rst, irq, nmi,			// System reset, IRQ (active low), NMI (active low)
 	input int_clr, nmi_clr, irq_mask,		// Clear perform-interrupt flag, clear NMI-pending flag, IRQ mask bit
@@ -34,7 +35,7 @@ module InterruptController(
     wire branch;                    // Flag to indicate if current opcode is a branch
     
 	// Detect external interrupts on Phi2:
-	always @(posedge clk_ph2) begin
+	always @(posedge sys_clock) begin
         
 		irq_det <= 0;						// IRQ gets reset every cycle
 		nmi_pre <= nmi;						// Latch old NMI value for edge detection
@@ -44,7 +45,7 @@ module InterruptController(
 			nmi_det <= 0;
 			nmi_pre <= 1;
 		end
-		else begin
+		else if (clk_ph2) begin
 			irq_det <= !irq && !irq_mask;								// Level detection - only if not masked	
 			nmi_det <= nmi_clr ? 1'd0 : (!nmi && nmi_pre) ? 1'd1 : nmi_det;	// Edge detection - stays high until cleared 
 		end
@@ -52,13 +53,13 @@ module InterruptController(
 	end
 	
 	// Set internal latches on Phi1:
-	always @(posedge clk_ph1) begin
+	always @(posedge sys_clock) begin
     
         if (rst == 0) begin         // Default values
             irq_out <= 0;
             nmi_out <= 0;
         end
-        else begin	
+        else if (clk_ph1) begin	
             irq_out <= irq_det;     // Change value on Phi1
             nmi_out <= nmi_det;     // Change value on Phi1
         end
@@ -69,17 +70,19 @@ module InterruptController(
     
     // Poll internal latch status on Phi1 of certain cycles:
     //  -> technically should be Phi2, but to get the timing right, we'll do it on the next Phi1
-    always @(posedge clk_ph1) begin
+    always @(posedge sys_clock) begin
         
         if (rst == 0) begin
 			int_out <= 1;			// do start-up sequence once rst goes high
 		end
-		else if (int_clr) begin
-			int_out <= 0;
-        end
-        else if ((IR != BRK) && ((next_cycle == 0 && !(branch && cycle == 2)) || (next_cycle == 2 && branch))) begin
-			int_out <= int_clr ? 1'd0 : ((irq_out || nmi_out) ? 1'd1 : int_out);
-        end
+		else if (clk_ph1) begin
+			if (int_clr) begin
+				int_out <= 0;
+			end
+			else if ((IR != BRK) && ((next_cycle == 0 && !(branch && cycle == 2)) || (next_cycle == 2 && branch))) begin
+				int_out <= int_clr ? 1'd0 : ((irq_out || nmi_out) ? 1'd1 : int_out);
+			end
+		end
     end
     
     

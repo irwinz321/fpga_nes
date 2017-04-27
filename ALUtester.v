@@ -25,6 +25,7 @@
 module ALUtester;
 
 	// Inputs
+	reg ROR_en;
 	reg SUM_en;
 	reg AND_en;
 	reg EOR_en;
@@ -42,6 +43,7 @@ module ALUtester;
 
 	// Instantiate the Unit Under Test (UUT)
 	ALU uut (
+		.ROR_en(ROR_en),
 		.SUM_en(SUM_en), 
 		.AND_en(AND_en), 
 		.EOR_en(EOR_en), 
@@ -72,14 +74,53 @@ module ALUtester;
 		#100;
         
 		// Add stimulus here
-		Ain = 9;
-		Bin = 8'hFF;
+		Ain = 8'h7f;
+		Bin = 8'h7f;
+		Cin = 1;
+		INV_en = 0;
+		{SUM_en, AND_en, EOR_en, OR_en, SR_en, ROR_en} = 6'b100000;
+		
+		#5;
+		Ain = 8'd1;
+		Bin = 8'd1;
+		Cin = 1;
+		INV_en = 1;
+		{SUM_en, AND_en, EOR_en, OR_en, SR_en, ROR_en} = 6'b100000;
+		
+		#5;
+		Ain = 8'd127;
+		Bin = 8'd1;
 		Cin = 0;
 		INV_en = 0;
-		{SUM_en, AND_en, EOR_en, OR_en, SR_en} = 5'b10000;
+		{SUM_en, AND_en, EOR_en, OR_en, SR_en, ROR_en} = 6'b100000;
 		
+		#5;
+		Ain = 8'd128;
+		Bin = 8'd1;
+		Cin = 1;
+		INV_en = 1;
+		{SUM_en, AND_en, EOR_en, OR_en, SR_en, ROR_en} = 6'b100000;
 		
-
+		#5;
+		Ain = 8'd0;
+		Bin = 8'd1;
+		Cin = 1;
+		INV_en = 1;
+		{SUM_en, AND_en, EOR_en, OR_en, SR_en, ROR_en} = 6'b100000;
+		
+		#5;
+		Ain = 8'd128;
+		Bin = 8'd1;
+		Cin = 1;
+		INV_en = 1;
+		{SUM_en, AND_en, EOR_en, OR_en, SR_en, ROR_en} = 6'b100000;
+		
+		#5;
+		Ain = 8'd127;
+		Bin = 8'd255;
+		Cin = 1;
+		INV_en = 1;
+		{SUM_en, AND_en, EOR_en, OR_en, SR_en, ROR_en} = 6'b100000;
 	end
       
 endmodule
